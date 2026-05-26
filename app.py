@@ -41,22 +41,28 @@ if uploaded_file is not None:
             except:
                 st.warning("تنبيه: ملف الخط غير موجود.")
             
-            y = 800 
+       # حلقة الصفحات
             for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
-                lines = text.split('\n')
-                
-                for line in lines:
-                    if line.strip():
-                        if y < 100:
-                            c.showPage()
-                            y = 800
+                if text.strip():
+                    # ترجمة الصفحة كاملة دفعة واحدة (أسرع بكثير)
+                    try:
+                        result = translator.translate_text(text, target_lang="AR")
+                        translated_text = result.text
                         
-                        try:
-                            # استخدام DeepL للترجمة
-                            result = translator.translate_text(line, target_lang="AR")
-                            translated = result.text
-                            proper_arabic = prepare_arabic_text(translated)
+                        # تقسيم النص المترجم إلى أسطر ووضعه في الـ PDF
+                        lines = translated_text.split('\n')
+                        for line in lines:
+                            if y < 100:
+                                c.showPage()
+                                y = 800
+                            
+                            proper_arabic = prepare_arabic_text(line)
+                            c.setFont("Arabic", 12)
+                            c.drawString(50, y, proper_arabic)
+                            y -= 25
+                    except Exception as e:
+                        st.error(f"خطأ في الترجمة: {e}")
                             
                             c.setFont("Helvetica", 12)
                             c.drawString(50, y, line[:60])
