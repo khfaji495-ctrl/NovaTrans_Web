@@ -1,6 +1,7 @@
 import streamlit as st
+import os
 import fitz
-import deepl  # المكتبة الجديدة
+import deepl
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -10,21 +11,27 @@ import io
 
 # الإعدادات
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
-st.title("NovaTrans Pro")
+st.title("NovaTrans Pro - ترجمة الملازم")
 
-# إعداد مترجم DeepL
-# تأكد من إضافة DEEPL_API_KEY في إعدادات Secrets في Streamlit Cloud
+# --- التعديل الجوهري للعمل على Render ---
+# قراءة المفتاح من المتغيرات البيئية (Environment Variables)
+auth_key = os.environ.get("DEEPL_API_KEY")
+
+if not auth_key:
+    st.error("خطأ: لم يتم العثور على مفتاح API في إعدادات البيئة (Environment Variables) الخاصة بـ Render. تأكد من ضبطه باسم DEEPL_API_KEY.")
+    st.stop()
+
 try:
-    auth_key = st.secrets["DEEPL_API_KEY"]
     translator = deepl.Translator(auth_key)
 except Exception as e:
-    st.error("خطأ: لم يتم العثور على مفتاح API في الإعدادات.")
+    st.error(f"خطأ في الاتصال بخدمة الترجمة: {e}")
+    st.stop()
 
 def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ضع ملفك هنا", type="pdf")
+uploaded_file = st.file_uploader("📂 ضع ملف الملزمة هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -32,14 +39,15 @@ if uploaded_file is not None:
     start = st.number_input("من صفحة:", 1, total_pages, 1)
     end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("ترجمه باستخدام DeepL"):
-        with st.spinner("جاري الترجمة الاحترافية..."):
+    if st.button("ابدأ الترجمة"):
+        with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             try:
+                # ملاحظة: تأكد من وجود ملف font.ttf في نفس مجلد الكود على GitHub
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
             except:
-                st.warning("تنبيه: ملف الخط غير موجود.")
+                st.warning("تنبيه: ملف الخط العربي (font.ttf) غير موجود.")
             
             y = 800 
             for i in range(start - 1, end):
@@ -52,26 +60,27 @@ if uploaded_file is not None:
                             c.showPage()
                             y = 800
                         
+                        # كتابة النص الإنجليزي
+                        c.setFont("Helvetica", 12)
+                        c.drawString(50, y, line[:80])
+                        y -= 20
+                        
+                        # ترجمة السطر
                         try:
-                            # استخدام DeepL للترجمة
                             result = translator.translate_text(line, target_lang="AR")
-                            translated = result.text
-                            proper_arabic = prepare_arabic_text(translated)
+                            proper_arabic = prepare_arabic_text(result.text)
                             
-                            c.setFont("Helvetica", 12)
-                            c.drawString(50, y, line[:60])
-                            y -= 20
                             c.setFont("Arabic", 12)
                             c.drawString(50, y, proper_arabic)
                             y -= 40
-                        except Exception as e:
+                        except:
                             continue
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("✅ تمت المعالجة بنجاح عبر DeepL!")
+            st.success("✅ تمت المعالجة!")
             st.download_button(
-                label="📥 تحميل الملف المترجم PDF",
+                label="📥 تحميل الملزمة المترجمة",
                 data=pdf_buffer,
                 file_name="NovaTrans_Translated.pdf",
                 mime="application/pdf"
