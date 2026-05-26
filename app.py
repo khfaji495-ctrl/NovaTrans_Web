@@ -12,13 +12,13 @@ import time  # تأكد من هذا الاستيراد
 # الإعدادات
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
 
-st.title("✨ NovaTrans Pro")
+st.title(" NovaTrans Pro")
 
 def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ارفع ملف الـ PDF هنا", type="pdf")
+uploaded_file = st.file_uploader("📂 ضع ملفك هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -26,7 +26,7 @@ if uploaded_file is not None:
     start = st.number_input("من صفحة:", 1, total_pages, 1)
     end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("🚀 ترجم واحفظ PDF"):
+    if st.button("ترجمه"):
         with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
@@ -36,6 +36,7 @@ if uploaded_file is not None:
                 st.warning("تنبيه: ملف الخط غير موجود.")
             
             y = 800
+        st.info("💡 نصيحة: الترجمة تأخذ وقتاً بسيطاً لضمان الجودة وعدم انقطاع الخدمة.")
             # حلقة الصفحات
             for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
@@ -70,7 +71,7 @@ if uploaded_file is not None:
             pdf_buffer.seek(0)
             
             # إظهار زر التحميل بعد التأكد من سلامة العملية
-            st.success("✅ تمت العملية بنجاح!")
+            st.success("✅ تمت المعالجه!")
             st.download_button(
                 label="📥 تحميل الملف المترجم PDF",
                 data=pdf_buffer,
