@@ -10,7 +10,7 @@ import io
 
 # الإعدادات
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
-st.title("NovaTrans Pro")
+st.title("NovaTrans Pro - ترجمة مزدوجة")
 
 # إعداد مترجم DeepL
 try:
@@ -32,45 +32,50 @@ if uploaded_file is not None:
     start = st.number_input("من صفحة:", 1, total_pages, 1)
     end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("ترجمه باستخدام DeepL"):
-        with st.spinner("جاري الترجمة الاحترافية..."):
+    if st.button("ابدأ الترجمة المزدوجة"):
+        with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             try:
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+                pdfmetrics.registerFont(TTFont('English', 'Helvetica'))
             except:
-                st.warning("تنبيه: ملف الخط (font.ttf) غير موجود.")
+                st.warning("تنبيه: ملف الخط غير موجود.")
             
             y = 800 
             for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
-                if text.strip():
-                    try:
-                        # ترجمة الصفحة كاملة دفعة واحدة
-                        result = translator.translate_text(text, target_lang="AR")
-                        translated_text = result.text
+                lines = text.split('\n')
+                
+                for line in lines:
+                    if line.strip():
+                        if y < 100:
+                            c.showPage()
+                            y = 800
                         
-                        # تقسيم النص المترجم للـ PDF
-                        lines = translated_text.split('\n')
-                        for line in lines:
-                            if y < 100:
-                                c.showPage()
-                                y = 800
+                        # كتابة النص الإنجليزي
+                        c.setFont("English", 12)
+                        c.drawString(50, y, line[:80]) # النص الإنجليزي
+                        y -= 20
+                        
+                        # ترجمة السطر
+                        try:
+                            result = translator.translate_text(line, target_lang="AR")
+                            proper_arabic = prepare_arabic_text(result.text)
                             
-                            if line.strip():
-                                proper_arabic = prepare_arabic_text(line)
-                                c.setFont("Arabic", 12)
-                                c.drawString(50, y, proper_arabic)
-                                y -= 30
-                    except Exception as e:
-                        st.error(f"خطأ في صفحة {i+1}: {e}")
+                            # كتابة الترجمة العربية
+                            c.setFont("Arabic", 12)
+                            c.drawString(50, y, proper_arabic)
+                            y -= 40 # مسافة أكبر بعد كل جملة
+                        except:
+                            continue
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("✅ تمت المعالجة بنجاح!")
+            st.success("✅ تمت المعالجة!")
             st.download_button(
                 label="📥 تحميل الملف المترجم PDF",
                 data=pdf_buffer,
-                file_name="NovaTrans_Translated.pdf",
+                file_name="NovaTrans_Dual.pdf",
                 mime="application/pdf"
             )
