@@ -1,14 +1,21 @@
 import streamlit as st
-from deep_translator import GoogleTranslator
+import fitz  # مكتبة قراءة الـ PDF
 
-st.title("NovaTrans Web")
-text_input = st.text_area("أدخل النص المراد ترجمته:")
+st.title("NovaTrans Pro - قارئ PDF")
 
-if st.button("ترجمة"):
-    if text_input:
-        # استخدام المكتبة الجديدة للترجمة
-        translated = GoogleTranslator(source='auto', target='ar').translate(text_input)
-        st.success("الترجمة:")
-        st.write(translated)
-    else:
-        st.warning("يرجى كتابة نص أولاً!")
+# زر لرفع الملف
+uploaded_file = st.file_uploader("اختر ملف PDF للترجمة", type="pdf")
+
+if uploaded_file is not None:
+    # فتح ملف الـ PDF
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    
+    st.write(f"عدد الصفحات: {len(doc)}")
+    
+    # عرض الصفحة الأولى كمثال
+    page = doc.load_page(0)
+    text = page.get_text()
+    
+    st.text_area("نص الصفحة الأولى:", text, height=300)
+else:
+    st.info("الرجاء رفع ملف PDF للبدء.")
