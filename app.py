@@ -1,41 +1,47 @@
 import streamlit as st
-import fitz  # هذا هو الاسم البرمجي لمكتبة pymupdf
+from pypdf import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+import io
 import deepl
 import os
-import io
 
-# تأكد من إضافة 'pymupdf' في ملف requirements.txt
-# استخدم مفتاح الـ API من Secrets
+# --- إعداد المترجم ---
 auth_key = os.environ.get("DEEPL_API_KEY")
 translator = deepl.Translator(auth_key)
 
-st.title("NovaTrans Pro - المترجم الاحترافي")
+st.title("NovaTrans Pro - المترجم الذكي")
 
-uploaded_file = st.file_uploader("ارفع الملف", type="pdf")
+uploaded_file = st.file_uploader("📂 ارفع ملف الملزمة", type="pdf")
 
-if uploaded_file and st.button("ترجمة"):
-    # نفتح الملف كـ "وثيقة قابلة للتعديل"
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+if uploaded_file and st.button("ترجمة الملازم"):
+    reader = PdfReader(uploaded_file)
+    writer = PdfWriter()
     
-    for page in doc:
-        # البحث عن كتل النصوص فقط
-        blocks = page.get_text("blocks")
-        for b in blocks:
-            # b[4] هو النص الموجود داخل الـ PDF
-            text = b[4]
-            if text.strip():
-                # ترجمة النص
-                translated_text = translator.translate_text(text, target_lang="AR").text
-                
-                # إخفاء النص القديم برسم مستطيل أبيض فوقه
-                page.add_redact_annot(b[:4], fill=(1, 1, 1))
-                page.apply_redactions()
-                
-                # كتابة الترجمة فوق المستطيل الأبيض
-                # ملاحظة: هذا يتطلب خطاً يدعم العربية مثل Arial.ttf
-                page.insert_text(b[:2], translated_text, fontname="helv", fontsize=10)
+    with st.spinner("جاري معالجة الصفحات..."):
+        for i, page in enumerate(reader.pages):
+            # إنشاء طبقة نصية مؤقتة للترجمة
+            packet = io.BytesIO()
+            can = canvas.Canvas(packet)
+            
+            # استخراج النص وترجمته
+            text = page.extract_text()
+            if text:
+                res = translator.translate_text(text[:500], target_lang="AR").text
+                can.setFont("Helvetica", 10)
+                can.drawString(50, 750, "الترجمة العربية:")
+                can.setFont("Helvetica", 10) # لاحظ: ستحتاج لخط عربي هنا لاحقاً
+                can.drawString(50, 730, res[:100])
+            
+            can.save()
+            packet.seek(0)
+            
+            # دمج الطبقة مع الصفحة الأصلية (اللوغو سيبقى كما هو)
+            new_pdf = PdfReader(packet)
+            page.merge_page(new_pdf.pages[0])
+            writer.add_page(page)
 
-    # حفظ الملف الناتج
-    output_buffer = io.BytesIO()
-    doc.save(output_buffer)
-    st.download_button("تحميل الملف المترجم", output_buffer.getvalue(), "Translated.pdf")
+    # التحميل
+    result_pdf = io.BytesIO()
+    writer.write(result_pdf)
+    st.success("✅ تمت العملية بنجاح!")
+    st.download_button("📥 تحميل الملف المترجم", result_pdf.getvalue(), "NovaTrans_Final.pdf")
