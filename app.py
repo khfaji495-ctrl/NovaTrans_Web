@@ -1,11 +1,10 @@
 import streamlit as st
 import fitz
 from deep_translator import GoogleTranslator
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from fpdf import FPDF
 import io
 
-# --- التصميم ---
+# --- التصميم والواجهة ---
 st.set_page_config(page_title="NovaTrans", layout="wide")
 st.markdown("""
     <style>
@@ -26,31 +25,32 @@ if uploaded_file:
     start_p = col1.number_input("من صفحة:", 1, total_pages, 1)
     end_p = col2.number_input("إلى صفحة:", 1, total_pages, start_p)
 
-    if st.button("🚀 ابدأ الترجمة"):
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer, pagesize=letter)
-        
-        with st.spinner("جاري المعالجة..."):
+    if st.button("🚀 ابدأ المعالجة والترجمة"):
+        with st.spinner("جاري الترجمة الذكية..."):
+            pdf = FPDF()
+            # إضافة الخط العربي (تأكد أن الملف في نفس المجلد)
+            pdf.add_font("Amiri", "", "Amiri.ttf", uni=True)
+            
             for i in range(start_p - 1, end_p):
                 page = doc.load_page(i)
                 text = page.get_text()
                 
                 if text.strip():
+                    # ترجمة النص
                     translated = GoogleTranslator(source='auto', target='ar').translate(text)
                     
-                    # نكتب النص في الـ PDF (الإنجليزي الأصلي ثم العربي)
-                    c.setFont("Helvetica", 12)
-                    c.drawString(50, 750, f"Original Text (Page {i+1}):")
-                    c.setFont("Helvetica", 10)
-                    c.drawString(50, 730, text[:100]) # عرض جزء من النص
+                    pdf.add_page()
+                    # إضافة النص الإنجليزي (كخط لاتيني)
+                    pdf.set_font("Arial", size=12)
+                    pdf.multi_cell(0, 10, txt="Original Text:")
+                    pdf.multi_cell(0, 10, txt=text[:1000].encode('latin-1', 'replace').decode('latin-1'))
                     
-                    c.setFont("Helvetica", 12)
-                    c.drawString(50, 700, "الترجمة:")
-                    c.setFont("Helvetica", 10)
-                    c.drawString(50, 680, translated[:100])
-                    
-                c.showPage()
+                    # إضافة الترجمة العربية (بخط Amiri)
+                    pdf.set_font("Amiri", size=14)
+                    pdf.multi_cell(0, 10, txt="الترجمة العربية:")
+                    pdf.multi_cell(0, 10, txt=translated)
             
-            c.save()
-            st.success("✅ تم الانتهاء!")
-            st.download_button("📥 تحميل ملف PDF", pdf_buffer.getvalue(), "NovaTrans.pdf")
+            # حفظ الملف في الذاكرة
+            output = io.BytesIO(pdf.output(dest='S').encode('latin-1'))
+            st.success("✅ تم الانتهاء بنجاح!")
+            st.download_button("📥 تحميل PDF", output, "NovaTrans.pdf")
