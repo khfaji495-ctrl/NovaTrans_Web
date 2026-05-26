@@ -18,7 +18,7 @@ def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 حط ملفك هنا", type="pdf")
+uploaded_file = st.file_uploader("📂 ضع ملفك هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -26,7 +26,7 @@ if uploaded_file is not None:
     start = st.number_input("من صفحة:", 1, total_pages, 1)
     end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("🚀 ترجم واحفظ PDF"):
+    if st.button("ترجمه PDF"):
         with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
@@ -37,7 +37,7 @@ if uploaded_file is not None:
             
             y = 800
 
-            st.info("💡 انتظر الترجمه تاخذ وقت.")
+            st.info("💡 تنبيه .  انتظر الترجمه تأخذ وقتاً بسيطاً لظمان الجوده.")
             
             # حلقة الصفحات
             for i in range(start - 1, end):
@@ -72,9 +72,9 @@ if uploaded_file is not None:
             pdf_buffer.seek(0)
             
             # إظهار زر التحميل بعد التأكد من سلامة العملية
-            st.success("✅ اخذ ملفك وروح!")
+            st.success("✅ ااكتمل الملف!")
             st.download_button(
-                label="📥 تحميل الملف المترجم PDF",
+                label="📥  PDF تحميل الملف ",
                 data=pdf_buffer,
                 file_name="NovaTrans_Translated.pdf",
                 mime="application/pdf"
