@@ -8,23 +8,46 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 
-# --- الإعدادات والواجهة (Neon Style) ---
+# --- الإعدادات والواجهة (Neon Green & Dark Grey) ---
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
+
 st.markdown("""
     <style>
-    .stApp { background-color: #060911; color: white; }
-    h1 { color: #ff00ff; text-align: center; text-shadow: 0 0 10px #ff00ff; }
+    /* الخلفية الرصاصية الغامقة */
+    .stApp { background-color: #2e3033; }
+    
+    /* العنوان النيون الأخضر */
+    h1 { 
+        color: #39ff14; 
+        text-align: center; 
+        text-shadow: 0 0 10px #39ff14; 
+        font-family: 'Arial', sans-serif;
+    }
+    
+    /* جعل النصوص واضحة باللون الأبيض */
+    .stMarkdown, .stText, label { 
+        color: #ffffff !important; 
+        font-size: 18px !important;
+    }
+    
+    /* تنسيق الحقول والأزرار */
+    .stButton>button {
+        background-color: #39ff14 !important;
+        color: #000000 !important;
+        font-weight: bold;
+        border: none;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("✨ NovaTrans Pro")
+st.title("✨ NovaTrans Pro - Neon Green")
 
-# --- دوال المعالجة ---
+# --- دالة معالجة النص العربي ---
 def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-# --- واجهة المستخدم ---
+# --- الواجهة ---
 uploaded_file = st.file_uploader("📂 ارفع ملف الـ PDF هنا", type="pdf")
 
 if uploaded_file:
@@ -53,11 +76,9 @@ if uploaded_file:
                             c.showPage()
                             y = 800
                         
-                        # ترجمة
                         translated = GoogleTranslator(source='en', target='ar').translate(line)
                         proper_arabic = prepare_arabic_text(translated)
                         
-                        # طباعة النص
                         c.setFont("Helvetica", 12)
                         c.drawString(50, y, line)
                         y -= 20
@@ -67,5 +88,5 @@ if uploaded_file:
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("✅ تم الانتهاء!")
+            st.success("✅ تم الانتهاء بنجاح!")
             st.download_button("📥 تحميل الملف المترجم PDF", pdf_buffer, "NovaTrans_Translated.pdf")
