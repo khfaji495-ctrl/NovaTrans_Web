@@ -35,10 +35,7 @@ if uploaded_file is not None:
             except:
                 st.warning("تنبيه: ملف الخط غير موجود.")
             
-            y = 800
-
-st.info("💡 نصيحة: الترجمة تأخذ وقتاً بسيطاً لضمان الجودة وعدم انقطاع الخدمة.")
-            
+            y = 800 
             # حلقة الصفحات
             for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
