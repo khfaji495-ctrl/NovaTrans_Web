@@ -1,94 +1,49 @@
 import streamlit as st
-import fitz
+import fitz  # PyMuPDF
 import io
 from deep_translator import GoogleTranslator
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from bidi.algorithm import get_display
 import arabic_reshaper
 
-# --- إعدادات الواجهة (ألوان مريحة للعين) ---
+# --- إعدادات الواجهة ---
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
-st.markdown("""
-    <style>
-    /* خلفية رمادية غامقة مريحة */
-    .stApp { background-color: #1e1e2e; color: #dcd7ba; }
-    
-    /* عنوان بلون تركوازي هادئ وجميل */
-    h1 { 
-        color: #7aa89f; 
-        text-align: center; 
-        font-family: sans-serif;
-    }
-    
-    /* تنسيق زر التحميل */
-    div.stButton > button {
-        background-color: #7aa89f;
-        color: #1e1e2e;
-        font-weight: bold;
-        border: none;
-        border-radius: 8px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.markdown("<style>.stApp { background-color: #1e1e2e; color: #dcd7ba; }</style>", unsafe_allow_html=True)
+st.title("✨ NovaTrans Pro - النسخة المحدثة")
 
-st.title("✨ NovaTrans Pro")
-
-# --- دالة تحضير النص العربي ---
 def prepare_arabic_text(text):
-    reshaped_text = arabic_reshaper.reshape(text)
-    return get_display(reshaped_text)
+    return get_display(arabic_reshaper.reshape(text))
 
-# --- واجهة المستخدم ---
 uploaded_file = st.file_uploader("📂 ارفع ملف الـ PDF هنا", type="pdf")
 
 if uploaded_file:
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    total_pages = len(doc)
+    # تحميل الملف في الذاكرة
+    file_bytes = uploaded_file.read()
+    doc = fitz.open(stream=file_bytes, filetype="pdf")
     
-    col1, col2 = st.columns(2)
-    start = col1.number_input("من صفحة:", 1, total_pages, 1)
-    end = col2.number_input("إلى صفحة:", 1, total_pages, start)
-
     if st.button("🚀 ترجم واحفظ PDF"):
-        with st.spinner("جاري المعالجة..."):
-            pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer)
-            
-            # تسجيل الخط
-            try:
-                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-            except:
-                st.error("خطأ: تأكد من رفع ملف 'font.ttf' في المجلد!")
-                st.stop()
-            
-            y = 800
-            for i in range(start - 1, end):
-                text = doc.load_page(i).get_text()
-                lines = text.split('\n')
-                
-                for line in lines:
-                    if line.strip():
-                        if y < 100:
-                            c.showPage()
-                            y = 800
-                        
-                        # الترجمة
-                        translated = GoogleTranslator(source='auto', target='ar').translate(line[:500])
+        with st.spinner("جاري الترجمة والحفاظ على الصور..."):
+            for page in doc:
+                # استخراج النصوص وإحداثياتها
+                blocks = page.get_text("blocks")
+                for b in blocks:
+                    # b[4] هو النص في كتلة النص
+                    text = b[4].strip()
+                    if text:
+                        # ترجمة النص
+                        translated = GoogleTranslator(source='auto', target='ar').translate(text[:500])
                         proper_arabic = prepare_arabic_text(translated)
                         
-                        # طباعة النص الإنجليزي
-                        c.setFont("Helvetica", 12)
-                        c.drawString(50, y, line[:80])
-                        y -= 25
+                        # إحداثيات الكتلة الحالية (x1, y1, x2, y2)
+                        x0, y0, x1, y1 = b[0], b[1], b[2], b[3]
                         
-                        # طباعة النص العربي
-                        c.setFont("Arabic", 12)
-                        c.drawString(50, y, proper_arabic)
-                        y -= 45
+                        # الكتابة تحت النص الأصلي مباشرة
+                        # نستخدم y1 (نهاية النص الأصلي) لإضافة الترجمة
+                        page.insert_text((x0, y1 + 10), proper_arabic, fontsize=10, fontname="helv", color=(0, 0, 0))
+
+            # حفظ الملف الناتج في ذاكرة مؤقتة
+            output_buffer = io.BytesIO()
+            doc.save(output_buffer)
+            output_buffer.seek(0)
             
-            c.save()
-            pdf_buffer.seek(0)
-            st.success("✅ تم الانتهاء بنجاح!")
-            st.download_button("📥 تحميل الملف المترجم PDF", pdf_buffer, "NovaTrans_Translated.pdf")
+            st.success("✅ تم الانتهاء! الصور والتنسيق محفوظان.")
+            st.download_button("📥 تحميل الملف المترجم PDF", output_buffer, "NovaTrans_Translated.pdf")
