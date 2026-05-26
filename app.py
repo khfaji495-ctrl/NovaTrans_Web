@@ -10,21 +10,21 @@ import io
 
 # الإعدادات
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
-st.title("NovaTrans Pro - ترجمة مزدوجة")
+st.title("NovaTrans Pro - ترجمة الملازم")
 
 # إعداد مترجم DeepL
 try:
     auth_key = st.secrets["DEEPL_API_KEY"]
     translator = deepl.Translator(auth_key)
 except Exception as e:
-    st.error("خطأ: تأكد من إضافة مفتاح API في الإعدادات.")
+    st.error("خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets.")
     st.stop()
 
 def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ضع ملفك هنا", type="pdf")
+uploaded_file = st.file_uploader("📂 ضع ملف الملزمة هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -32,15 +32,14 @@ if uploaded_file is not None:
     start = st.number_input("من صفحة:", 1, total_pages, 1)
     end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("ابدأ الترجمة المزدوجة"):
+    if st.button("ابدأ الترجمة"):
         with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             try:
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-                pdfmetrics.registerFont(TTFont('English', 'Helvetica'))
             except:
-                st.warning("تنبيه: ملف الخط غير موجود.")
+                st.warning("تنبيه: ملف الخط العربي (font.ttf) غير موجود.")
             
             y = 800 
             for i in range(start - 1, end):
@@ -53,9 +52,9 @@ if uploaded_file is not None:
                             c.showPage()
                             y = 800
                         
-                        # كتابة النص الإنجليزي
-                        c.setFont("English", 12)
-                        c.drawString(50, y, line[:80]) # النص الإنجليزي
+                        # كتابة النص الإنجليزي بالخط الافتراضي (Helvetica)
+                        c.setFont("Helvetica", 12)
+                        c.drawString(50, y, line[:80])
                         y -= 20
                         
                         # ترجمة السطر
@@ -66,7 +65,7 @@ if uploaded_file is not None:
                             # كتابة الترجمة العربية
                             c.setFont("Arabic", 12)
                             c.drawString(50, y, proper_arabic)
-                            y -= 40 # مسافة أكبر بعد كل جملة
+                            y -= 40
                         except:
                             continue
             
@@ -74,8 +73,8 @@ if uploaded_file is not None:
             pdf_buffer.seek(0)
             st.success("✅ تمت المعالجة!")
             st.download_button(
-                label="📥 تحميل الملف المترجم PDF",
+                label="📥 تحميل الملزمة المترجمة",
                 data=pdf_buffer,
-                file_name="NovaTrans_Dual.pdf",
+                file_name="NovaTrans_Translated.pdf",
                 mime="application/pdf"
             )
