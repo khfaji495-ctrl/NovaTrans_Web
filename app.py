@@ -1,80 +1,93 @@
 import streamlit as st
+import os
 import fitz
 import deepl
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from bidi.algorithm import get_display
+# نحن الآن نستخدم FPDF2 لأنها الأكثر استقراراً للعربية في Streamlit
+from fpdf import FPDF 
 import arabic_reshaper
+from bidi.algorithm import get_display
 import io
 
-# الإعدادات
-st.set_page_config(page_title="NovaTrans Pro", layout="wide")
-st.title("NovaTrans Pro - ترجمة الملازم")
+# إعداد المترجم باستخدام المتغيرات البيئية (Environment Variables)
+auth_key = os.environ.get("DEEPL_API_KEY")
+translator = deepl.Translator(auth_key)
 
-# إعداد مترجم DeepL
-try:
-    auth_key = st.secrets["DEEPL_API_KEY"]
-    translator = deepl.Translator(auth_key)
-except Exception as e:
-    st.error("خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets.")
-    st.stop()
+# --- هياكل أولية للميزات المستحيلة ---
+def handle_math_equations(equation_image):
+    """
+    [رؤية مستقبلية]
+    هذه الوظيفة ستقوم بإرسال صورة المعادلة إلى خدمة Mathpix API
+    لتحويلها إلى نص (LaTeX) رياضي.
+    """
+    # math_text = call_mathpix_api(equation_image)
+    # return math_text
+    return None
 
+def call_ai_for_explanation(math_text):
+    """
+    [رؤية مستقبلية]
+    هذه الوظيفة ستقوم بإرسال النص الرياضي إلى OpenAI API (ChatGPT)
+    لطلب شرح للمعادلة باللغة العربية.
+    """
+    # explanation = call_openai_api("اشرح لي هذه المعادلة: " + math_text)
+    # return explanation
+    return None
+
+# --- الوظيفة الحالية لمعالجة النصوص العربية ---
 def prepare_arabic_text(text):
+    """
+    إعادة تشكيل الحروف العربية وربطها لكي تظهر بشكل صحيح في الـ PDF
+    """
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ضع ملف الملزمة هنا", type="pdf")
+st.title("NovaTrans Pro - المترجم الذكي")
 
-if uploaded_file is not None:
+uploaded_file = st.file_uploader("📂 ارفع ملف PDF", type="pdf")
+
+if uploaded_file and st.button("ترجمة וחفظ"):
+    # قراءة الملف الأصلي للحفاظ على الصور في الذاكرة
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    total_pages = len(doc)
-    start = st.number_input("من صفحة:", 1, total_pages, 1)
-    end = st.number_input("إلى صفحة:", 1, total_pages, start)
-
-    if st.button("ابدأ الترجمة"):
-        with st.spinner("جاري المعالجة..."):
-            pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer)
-            try:
-                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-            except:
-                st.warning("تنبيه: ملف الخط العربي (font.ttf) غير موجود.")
+    
+    # إنشاء PDF جديد يدعم العربية
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # تسجيل الخط العربي (تأكد من وجود font.ttf في مشروعك على GitHub)
+    try:
+        pdf.add_font("ArabicFont", "", "font.ttf", uni=True)
+        pdf.set_font("ArabicFont", size=12)
+    except:
+        st.error("تأكد من وجود ملف font.ttf في المجلد!")
+        st.stop()
+    
+    with st.spinner("جاري الترجمة والمعالجة..."):
+        for page in doc:
+            text = page.get_text()
             
-            y = 800 
-            for i in range(start - 1, end):
-                text = doc.load_page(i).get_text()
-                lines = text.split('\n')
-                
-                for line in lines:
-                    if line.strip():
-                        if y < 100:
-                            c.showPage()
-                            y = 800
-                        
-                        # كتابة النص الإنجليزي بالخط الافتراضي (Helvetica)
-                        c.setFont("Helvetica", 12)
-                        c.drawString(50, y, line[:80])
-                        y -= 20
-                        
-                        # ترجمة السطر
-                        try:
-                            result = translator.translate_text(line, target_lang="AR")
-                            proper_arabic = prepare_arabic_text(result.text)
-                            
-                            # كتابة الترجمة العربية
-                            c.setFont("Arabic", 12)
-                            c.drawString(50, y, proper_arabic)
-                            y -= 40
-                        except:
-                            continue
+            # --- [رؤية مستقبلية] للحفاظ على الصور ---
+            # في هذه المرحلة، سنستدعي كود خاص لاستخراج الصور من 'page'
+            # وإعادة رسمها في الـ PDF الجديد باستخدام 'pdf.image' في نفس الإحداثيات
             
-            c.save()
-            pdf_buffer.seek(0)
-            st.success("✅ تمت المعالجة!")
-            st.download_button(
-                label="📥 تحميل الملزمة المترجمة",
-                data=pdf_buffer,
-                file_name="NovaTrans_Translated.pdf",
-                mime="application/pdf"
-            )
+            # --- [رؤية مستقبلية] لقراءة المعادلات ---
+            # في هذه المرحلة، سنستدعي 'handle_math_equations' و 'call_ai_for_explanation'
+            # لعرض شرح المعادلات
+            
+            # معالجة النص الحالي
+            for line in text.split('\n'):
+                if line.strip():
+                    try:
+                        # ترجمة
+                        res = translator.translate_text(line, target_lang="AR").text
+                        proper_arabic = prepare_arabic_text(res)
+                        
+                        # إضافة النص للـ PDF (ترجمة من اليمين لليسار)
+                        pdf.cell(0, 10, txt=proper_arabic, ln=True, align='R')
+                    except:
+                        continue
+        
+        # تحويل الملف وتجهيزه للتحميل
+        # ملاحظة: FPDF2 تتعامل مع الترميز بشكل مختلف
+        pdf_output = pdf.output(dest='S').encode('latin-1')
+        st.success("✅ تمت الترجمة بنجاح!")
+        st.download_button("📥 تحميل الملف المترجم", pdf_output, "Translated.pdf", "application/pdf")
