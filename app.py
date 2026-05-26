@@ -61,8 +61,18 @@ if uploaded_file is not None:
                             y -= 40
                         except:
                             continue
+           # ... بعد نهاية حلقات الترجمة ...
             
-            c.save()
+            c.save() # حفظ ملف الـ PDF
+            
+            # التأكد من أن المؤشر في بداية الـ buffer قبل القراءة
             pdf_buffer.seek(0)
-            st.success("✅ تمت العملية!")
-            st.download_button("📥 تحميل الملف المترجم", pdf_buffer, "NovaTrans_Translated.pdf")
+            
+            # إظهار زر التحميل بعد التأكد من سلامة العملية
+            st.success("✅ تمت العملية بنجاح!")
+            st.download_button(
+                label="📥 تحميل الملف المترجم PDF",
+                data=pdf_buffer,
+                file_name="NovaTrans_Translated.pdf",
+                mime="application/pdf"
+            )
