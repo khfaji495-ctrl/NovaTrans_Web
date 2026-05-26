@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 import fitz
 import deepl
 from reportlab.pdfgen import canvas
@@ -12,12 +13,18 @@ import io
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
 st.title("NovaTrans Pro - ترجمة الملازم")
 
-# إعداد مترجم DeepL
+# --- التعديل الجوهري للعمل على Render ---
+# قراءة المفتاح من المتغيرات البيئية (Environment Variables)
+auth_key = os.environ.get("DEEPL_API_KEY")
+
+if not auth_key:
+    st.error("خطأ: لم يتم العثور على مفتاح API في إعدادات البيئة (Environment Variables) الخاصة بـ Render. تأكد من ضبطه باسم DEEPL_API_KEY.")
+    st.stop()
+
 try:
-    auth_key = st.secrets["DEEPL_API_KEY"]
     translator = deepl.Translator(auth_key)
 except Exception as e:
-    st.error("خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets.")
+    st.error(f"خطأ في الاتصال بخدمة الترجمة: {e}")
     st.stop()
 
 def prepare_arabic_text(text):
@@ -37,6 +44,7 @@ if uploaded_file is not None:
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             try:
+                # ملاحظة: تأكد من وجود ملف font.ttf في نفس مجلد الكود على GitHub
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
             except:
                 st.warning("تنبيه: ملف الخط العربي (font.ttf) غير موجود.")
@@ -52,7 +60,7 @@ if uploaded_file is not None:
                             c.showPage()
                             y = 800
                         
-                        # كتابة النص الإنجليزي بالخط الافتراضي (Helvetica)
+                        # كتابة النص الإنجليزي
                         c.setFont("Helvetica", 12)
                         c.drawString(50, y, line[:80])
                         y -= 20
@@ -62,7 +70,6 @@ if uploaded_file is not None:
                             result = translator.translate_text(line, target_lang="AR")
                             proper_arabic = prepare_arabic_text(result.text)
                             
-                            # كتابة الترجمة العربية
                             c.setFont("Arabic", 12)
                             c.drawString(50, y, proper_arabic)
                             y -= 40
