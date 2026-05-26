@@ -1,12 +1,14 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz
 import easyocr
 import io
 from PIL import Image, ImageDraw, ImageFont
 from deep_translator import GoogleTranslator
 import numpy as np
+import arabic_reshaper
+from bidi.algorithm import get_display
 
-# --- واجهة النيون الأخضر ---
+# إعدادات الواجهة النيون الأخضر
 st.set_page_config(page_title="NovaTrans Pro - AI", layout="wide")
 st.markdown("""
     <style>
@@ -17,18 +19,18 @@ st.markdown("""
 
 st.title("✨ NovaTrans Pro - AI Vision")
 
-# إعداد OCR (يتم تحميله مرة واحدة)
 @st.cache_resource
 def load_reader():
     return easyocr.Reader(['en'])
 
 reader = load_reader()
+
 uploaded_file = st.file_uploader("📂 ارفع ملزمة (صور أو PDF):", type=["pdf", "jpg", "png"])
 
 if uploaded_file:
     if st.button("🚀 معالجة وترجمة بصرية"):
-        with st.spinner("جاري تحليل الصور والترجمة..."):
-            # تحويل الملف إلى صورة (لأول صفحة كمثال)
+        with st.spinner("جاري التحليل والترجمة الذكية..."):
+            # تحويل الملف إلى صورة
             if uploaded_file.type == "application/pdf":
                 doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
                 pix = doc.load_page(0).get_pixmap()
@@ -36,28 +38,34 @@ if uploaded_file:
             else:
                 img = Image.open(uploaded_file)
             
-            # 1. استخراج النص ومكانه
             results = reader.readtext(np.array(img))
-            
-            # 2. الرسم فوق الصورة
             draw = ImageDraw.Draw(img)
             
+            # تحميل خط عربي (تأكد من وجود font.ttf في المستودع)
+            try:
+                font = ImageFont.truetype("font.ttf", 20)
+            except:
+                font = ImageFont.load_default()
+
             for (bbox, text, prob) in results:
-                if prob > 0.3:  # دقة القراءة
-                    # ترجمة
+                if prob > 0.2:
+                    # 1. الترجمة
                     translated = GoogleTranslator(source='en', target='ar').translate(text)
                     
-                    # تحديد إحداثيات الرسم
-                    top_left = bbox[0]
-                    # رسم مستطيل أبيض لتغطية النص الأصلي
-                    draw.rectangle([bbox[0], bbox[2]], fill="white")
-                    # كتابة الترجمة (يحتاج خط يدعم العربية)
-                    draw.text(top_left, translated, fill="black")
+                    # 2. معالجة النص العربي (الربط والاتجاه)
+                    reshaped_text = arabic_reshaper.reshape(translated)
+                    bidi_text = get_display(reshaped_text)
+                    
+                    # 3. الرسم فوق النص الأصلي
+                    x0, y0 = bbox[0]
+                    x1, y1 = bbox[2]
+                    draw.rectangle([x0, y0, x1, y1], fill="white")
+                    
+                    # 4. كتابة الترجمة
+                    draw.text((x0, y0), bidi_text, fill="black", font=font)
             
-            # عرض النتيجة
-            st.image(img, caption="الملزمة المترجمة", use_column_width=True)
+            st.image(img, caption="النتيجة بعد الترجمة البصرية", use_column_width=True)
             
-            # زر التحميل
             buf = io.BytesIO()
             img.save(buf, format="PNG")
-            st.download_button("📥 تحميل الصفحة المترجمة", buf.getvalue(), "translated_page.png")
+            st.download_button("📥 تحميل الصورة المترجمة", buf.getvalue(), "translated.png")
