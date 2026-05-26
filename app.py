@@ -63,7 +63,6 @@ if uploaded_file is not None:
                             y -= 25
                     except Exception as e:
                         st.error(f"خطأ في الترجمة: {e}")
-                            
                             c.setFont("Helvetica", 12)
                             c.drawString(50, y, line[:60])
                             y -= 20
