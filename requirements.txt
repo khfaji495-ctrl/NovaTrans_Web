@@ -1,6 +1,6 @@
 streamlit
 pymupdf
-deep-translator
 reportlab
 arabic-reshaper
 python-bidi
+deepl
