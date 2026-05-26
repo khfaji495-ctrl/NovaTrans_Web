@@ -1,6 +1,6 @@
 import streamlit as st
 import fitz
-import deepl  # المكتبة الجديدة
+import deepl
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -13,12 +13,12 @@ st.set_page_config(page_title="NovaTrans Pro", layout="wide")
 st.title("NovaTrans Pro")
 
 # إعداد مترجم DeepL
-# تأكد من إضافة DEEPL_API_KEY في إعدادات Secrets في Streamlit Cloud
 try:
     auth_key = st.secrets["DEEPL_API_KEY"]
     translator = deepl.Translator(auth_key)
 except Exception as e:
-    st.error("خطأ: لم يتم العثور على مفتاح API في الإعدادات.")
+    st.error("خطأ: تأكد من إضافة مفتاح API في الإعدادات.")
+    st.stop()
 
 def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
@@ -39,42 +39,35 @@ if uploaded_file is not None:
             try:
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
             except:
-                st.warning("تنبيه: ملف الخط غير موجود.")
+                st.warning("تنبيه: ملف الخط (font.ttf) غير موجود.")
             
-       # حلقة الصفحات
+            y = 800 
             for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
                 if text.strip():
-                    # ترجمة الصفحة كاملة دفعة واحدة (أسرع بكثير)
                     try:
+                        # ترجمة الصفحة كاملة دفعة واحدة
                         result = translator.translate_text(text, target_lang="AR")
                         translated_text = result.text
                         
-                        # تقسيم النص المترجم إلى أسطر ووضعه في الـ PDF
+                        # تقسيم النص المترجم للـ PDF
                         lines = translated_text.split('\n')
                         for line in lines:
                             if y < 100:
                                 c.showPage()
                                 y = 800
                             
-                            proper_arabic = prepare_arabic_text(line)
-                            c.setFont("Arabic", 12)
-                            c.drawString(50, y, proper_arabic)
-                            y -= 25
+                            if line.strip():
+                                proper_arabic = prepare_arabic_text(line)
+                                c.setFont("Arabic", 12)
+                                c.drawString(50, y, proper_arabic)
+                                y -= 30
                     except Exception as e:
-                        st.error(f"خطأ في الترجمة: {e}")
-                            c.setFont("Helvetica", 12)
-                            c.drawString(50, y, line[:60])
-                            y -= 20
-                            c.setFont("Arabic", 12)
-                            c.drawString(50, y, proper_arabic)
-                            y -= 40
-                        except Exception as e:
-                            continue
+                        st.error(f"خطأ في صفحة {i+1}: {e}")
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("✅ تمت المعالجة بنجاح عبر DeepL!")
+            st.success("✅ تمت المعالجة بنجاح!")
             st.download_button(
                 label="📥 تحميل الملف المترجم PDF",
                 data=pdf_buffer,
