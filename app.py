@@ -28,6 +28,24 @@ if uploaded_file is not None:
 
     if st.button("ترجمه PDF"):
         with st.spinner("جاري المعالجة..."):
+            # داخل حلقة الصفحات (for i in range(start - 1, end):)
+for i in range(start - 1, end):
+    # 1. افتح صفحة جديدة لكل صفحة
+    page_buffer = io.BytesIO()
+    c = canvas.Canvas(page_buffer)
+    # ... (كود تسجيل الخط والرسم) ...
+    
+    # 2. احفظ الصفحة فوراً
+    c.save()
+    page_buffer.seek(0)
+    
+    # 3. اعرض زر تحميل خاص بهذه الصفحة
+    st.download_button(
+        label=f"📥 تحميل الصفحة {i + 1}",
+        data=page_buffer,
+        file_name=f"page_{i + 1}.pdf",
+        mime="application/pdf"
+    )
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             try:
