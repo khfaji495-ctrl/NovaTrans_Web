@@ -5,83 +5,62 @@ import deepl
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from bidi.algorithm import get_display
 import arabic_reshaper
+from bidi.algorithm import get_display
 import io
 
-# الإعدادات
-st.set_page_config(page_title="NovaTrans Pro", layout="wide")
-st.title("NovaTrans Pro - ترجمة الملازم")
-
-# --- التعديل الجوهري للعمل على Render ---
-# قراءة المفتاح من المتغيرات البيئية (Environment Variables)
+# إعداد المترجم
 auth_key = os.environ.get("DEEPL_API_KEY")
-
-if not auth_key:
-    st.error("خطأ: لم يتم العثور على مفتاح API في إعدادات البيئة (Environment Variables) الخاصة بـ Render. تأكد من ضبطه باسم DEEPL_API_KEY.")
-    st.stop()
-
-try:
-    translator = deepl.Translator(auth_key)
-except Exception as e:
-    st.error(f"خطأ في الاتصال بخدمة الترجمة: {e}")
-    st.stop()
+translator = deepl.Translator(auth_key)
 
 def prepare_arabic_text(text):
+    # إعادة تشكيل الحروف العربية وربطها
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ضع ملف الملزمة هنا", type="pdf")
+st.title("NovaTrans Pro - المترجم الذكي")
 
-if uploaded_file is not None:
+uploaded_file = st.file_uploader("ارفع ملف PDF", type="pdf")
+
+if uploaded_file:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    total_pages = len(doc)
-    start = st.number_input("من صفحة:", 1, total_pages, 1)
-    end = st.number_input("إلى صفحة:", 1, total_pages, start)
+    
+    if st.button("ترجمة وحفظ"):
+        pdf_buffer = io.BytesIO()
+        c = canvas.Canvas(pdf_buffer)
+        
+        # تسجيل الخط العربي (تأكد من وجود font.ttf في مشروعك على GitHub)
+        try:
+            pdfmetrics.registerFont(TTFont('ArabicFont', 'font.ttf'))
+        except:
+            st.error("لم يتم العثور على ملف الخط 'font.ttf'.")
+            st.stop()
 
-    if st.button("ابدأ الترجمة"):
-        with st.spinner("جاري المعالجة..."):
-            pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer)
-            try:
-                # ملاحظة: تأكد من وجود ملف font.ttf في نفس مجلد الكود على GitHub
-                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-            except:
-                st.warning("تنبيه: ملف الخط العربي (font.ttf) غير موجود.")
+        y = 750
+        for page in doc:
+            text = page.get_text()
+            lines = text.split('\n')
             
-            y = 800 
-            for i in range(start - 1, end):
-                text = doc.load_page(i).get_text()
-                lines = text.split('\n')
-                
-                for line in lines:
-                    if line.strip():
-                        if y < 100:
-                            c.showPage()
-                            y = 800
-                        
-                        # كتابة النص الإنجليزي
-                        c.setFont("Helvetica", 12)
-                        c.drawString(50, y, line[:80])
-                        y -= 20
-                        
-                        # ترجمة السطر
-                        try:
-                            result = translator.translate_text(line, target_lang="AR")
-                            proper_arabic = prepare_arabic_text(result.text)
-                            
-                            c.setFont("Arabic", 12)
-                            c.drawString(50, y, proper_arabic)
-                            y -= 40
-                        except:
-                            continue
-            
-            c.save()
-            pdf_buffer.seek(0)
-            st.success("✅ تمت المعالجة!")
-            st.download_button(
-                label="📥 تحميل الملزمة المترجمة",
-                data=pdf_buffer,
-                file_name="NovaTrans_Translated.pdf",
-                mime="application/pdf"
-            )
+            for line in lines:
+                if line.strip():
+                    if y < 50:
+                        c.showPage()
+                        y = 750
+                    
+                    # 1. كتابة النص الإنجليزي الأصلي
+                    c.setFont("Helvetica", 10)
+                    c.drawString(50, y, line[:100])
+                    y -= 20
+                    
+                    # 2. الترجمة
+                    result = translator.translate_text(line, target_lang="AR")
+                    arabic_text = prepare_arabic_text(result.text)
+                    
+                    # 3. كتابة النص العربي
+                    c.setFont("ArabicFont", 10)
+                    c.drawRightString(550, y, arabic_text)
+                    y -= 30
+        
+        c.save()
+        st.success("تمت الترجمة بنجاح!")
+        st.download_button("تحميل الملف المترجم", pdf_buffer.getvalue(), "Translated.pdf", "application/pdf")
