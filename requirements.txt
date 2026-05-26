@@ -1,8 +1,9 @@
 streamlit
 pymupdf
-pytesseract
+easyocr
+numpy
 pillow
 deep-translator
 arabic-reshaper
 python-bidi
-reportlab
+fpdf
