@@ -1,76 +1,80 @@
 import streamlit as st
-import os
 import fitz
 import deepl
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-import arabic_reshaper
 from bidi.algorithm import get_display
+import arabic_reshaper
 import io
 
-# 1. إعداد المترجم
-auth_key = os.environ.get("DEEPL_API_KEY")
-translator = deepl.Translator(auth_key)
+# الإعدادات
+st.set_page_config(page_title="NovaTrans Pro", layout="wide")
+st.title("NovaTrans Pro - ترجمة الملازم")
 
-# 2. وظيفة معالجة النص العربي
+# إعداد مترجم DeepL
+try:
+    auth_key = st.secrets["DEEPL_API_KEY"]
+    translator = deepl.Translator(auth_key)
+except Exception as e:
+    st.error("خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets.")
+    st.stop()
+
 def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-st.title("NovaTrans Pro - المترجم الذكي")
+uploaded_file = st.file_uploader("📂 ضع ملف الملزمة هنا", type="pdf")
 
-uploaded_file = st.file_uploader("ارفع ملف PDF", type="pdf")
-
-if uploaded_file:
+if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    
-    if st.button("ترجمة وحفظ"):
-        with st.spinner("جاري الترجمة والمعالجة..."):
+    total_pages = len(doc)
+    start = st.number_input("من صفحة:", 1, total_pages, 1)
+    end = st.number_input("إلى صفحة:", 1, total_pages, start)
+
+    if st.button("ابدأ الترجمة"):
+        with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
+            try:
+                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+            except:
+                st.warning("تنبيه: ملف الخط العربي (font.ttf) غير موجود.")
             
-            # 3. التأكد من وجود الخط وتسجيله
-            font_name = 'ArabicFont'
-            font_path = 'font.ttf' # تأكد أن هذا هو اسم الملف في GitHub
-            
-            if os.path.exists(font_path):
-                pdfmetrics.registerFont(TTFont(font_name, font_path))
-            else:
-                st.error("خطأ: لم يتم العثور على ملف 'font.ttf' في المستودع. تأكد من رفعه!")
-                st.stop()
-
-            y = 750
-            for page in doc:
-                text = page.get_text()
+            y = 800 
+            for i in range(start - 1, end):
+                text = doc.load_page(i).get_text()
                 lines = text.split('\n')
                 
                 for line in lines:
                     if line.strip():
-                        # إضافة صفحة جديدة إذا وصلنا لنهاية الصفحة
-                        if y < 50:
+                        if y < 100:
                             c.showPage()
-                            y = 750
+                            y = 800
                         
-                        # كتابة النص الإنجليزي الأصلي
-                        c.setFont("Helvetica", 10)
-                        c.drawString(50, y, line[:100])
+                        # كتابة النص الإنجليزي بالخط الافتراضي (Helvetica)
+                        c.setFont("Helvetica", 12)
+                        c.drawString(50, y, line[:80])
                         y -= 20
                         
                         # ترجمة السطر
                         try:
                             result = translator.translate_text(line, target_lang="AR")
-                            arabic_text = prepare_arabic_text(result.text)
+                            proper_arabic = prepare_arabic_text(result.text)
                             
-                            # كتابة النص العربي بالخط الصحيح
-                            c.setFont(font_name, 12)
-                            # نستخدم drawRightString لأن النص العربي يُكتب من اليمين
-                            c.drawRightString(550, y, arabic_text)
+                            # كتابة الترجمة العربية
+                            c.setFont("Arabic", 12)
+                            c.drawString(50, y, proper_arabic)
                             y -= 40
-                        except Exception as e:
+                        except:
                             continue
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("تمت الترجمة بنجاح!")
-            st.download_button("تحميل الملف المترجم", pdf_buffer, "Translated_Final.pdf", "application/pdf")
+            st.success("✅ تمت المعالجة!")
+            st.download_button(
+                label="📥 تحميل الملزمة المترجمة",
+                data=pdf_buffer,
+                file_name="NovaTrans_Translated.pdf",
+                mime="application/pdf"
+            )
