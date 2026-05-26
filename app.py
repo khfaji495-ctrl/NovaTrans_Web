@@ -1,34 +1,32 @@
 import streamlit as st
-import fitz  # مكتبة PyMuPDF لقراءة الـ PDF
+import fitz
 from deep_translator import GoogleTranslator
 
-st.title("NovaTrans Pro - المترجم الذكي")
+st.title("✨ NovaTrans Neon")
 
-# 1. رفع ملف الـ PDF
-uploaded_file = st.file_uploader("ارفع الملزمة (PDF) هنا:", type="pdf")
+uploaded_file = st.file_uploader("ارفع ملزمة الـ PDF:", type="pdf")
 
 if uploaded_file:
-    # 2. قراءة الملف
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    all_text = ""
+    page_num = st.number_input("اختر رقم الصفحة للترجمة:", min_value=1, max_value=len(doc), value=1)
     
-    # استخراج النص من الصفحات
-    for page in doc:
-        all_text += page.get_text()
-    
-    st.success("تم رفع الملف بنجاح! جاري التحضير للترجمة...")
-    
-    # 3. زر الترجمة
-    if st.button("ترجم الآن"):
-        with st.spinner("جاري الترجمة، انتظر قليلاً..."):
-            # تقسيم النص لترجمته (لأن المترجم له حد أقصى للحروف)
-            lines = all_text.split('\n')
-            final_output = ""
+    if st.button("ترجم الصفحة المحددة"):
+        with st.spinner("جاري ترجمة الصفحة..."):
+            # استخراج النص من صفحة واحدة فقط
+            page = doc.load_page(page_num - 1)
+            text = page.get_text()
             
-            for line in lines:
-                if line.strip(): # إذا كان السطر يحتوي نصاً
-                    translated = GoogleTranslator(source='en', target='ar').translate(line)
-                    final_output += f"{line}\n{translated}\n\n"
-            
-            st.text_area("النتيجة (نصك الأصلي + الترجمة):", final_output, height=500)
-            st.download_button("حفظ النص المترجم", final_output)
+            if text.strip():
+                # ترجمة الصفحة الواحدة
+                translated = GoogleTranslator(source='en', target='ar').translate(text)
+                
+                # عرض النتائج في عمودين
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("الأصلي")
+                    st.write(text)
+                with col2:
+                    st.subheader("الترجمة")
+                    st.write(translated)
+            else:
+                st.warning("هذه الصفحة لا تحتوي على نص قابل للقراءة!")
