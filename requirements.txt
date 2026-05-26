@@ -2,5 +2,5 @@ streamlit
 pymupdf
 deep-translator
 reportlab
-pillow
-numpy
+arabic-reshaper
+python-bidi
