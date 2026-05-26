@@ -1,5 +1,6 @@
 import streamlit as st
 import fitz
+import easyocr
 import io
 import numpy as np
 from PIL import Image, ImageDraw
@@ -7,46 +8,56 @@ from deep_translator import GoogleTranslator
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 
-# إعدادات الواجهة
+# 1. إعدادات الواجهة
 st.set_page_config(page_title="NovaTrans", layout="wide")
 st.markdown("<style>.stApp { background-color: #333; } h1 { color: #39ff14; text-align: center; }</style>", unsafe_allow_html=True)
 st.title("NovaTrans")
+
+@st.cache_resource
+def load_reader():
+    return easyocr.Reader(['en'])
+
+reader = load_reader()
 
 uploaded_file = st.file_uploader("📂 ارفع ملزمة PDF:", type=["pdf"])
 
 if uploaded_file:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     
-    col1, col2 = st.columns(2)
-    start_page = col1.number_input("من صفحة:", 1, len(doc), 1)
-    end_page = col2.number_input("إلى صفحة:", 1, len(doc), start_page)
-
-    if st.button("🚀 ابدأ المعالجة"):
-        with st.spinner("جاري الترجمة وحفظ الملف..."):
+    if st.button("🚀 معالجة وترجمة"):
+        with st.spinner("جاري التحليل..."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer, pagesize=letter)
             
-            for i in range(start_page - 1, end_page):
-                page = doc.load_page(i)
+            for page in doc:
+                # محاولة استخراج النص
                 text = page.get_text()
                 
+                # إذا كان النص رموزاً أو فارغاً، نستخدم OCR
+                if len(text.strip()) < 10:
+                    pix = page.get_pixmap()
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    results = reader.readtext(np.array(img))
+                    
+                    # تجميع النص من الـ OCR
+                    text = " ".join([res[1] for res in results])
+                
+                # الترجمة
                 if text.strip():
-                    # ترجمة النص
                     translated = GoogleTranslator(source='auto', target='ar').translate(text[:2000])
                     
-                    # الرسم على الـ PDF مباشرة بدلاً من معالجة الصور الثقيلة
-                    c.setFont("Helvetica-Bold", 14)
-                    c.drawString(50, 750, "English Text:")
-                    c.setFont("Helvetica", 12)
-                    c.drawString(50, 730, text[:80]) # عرض السطر الأول
+                    c.setFont("Helvetica-Bold", 12)
+                    c.drawString(50, 750, "English Text (Extracted):")
+                    c.setFont("Helvetica", 10)
+                    c.drawString(50, 730, text[:100])
                     
-                    c.setFont("Helvetica-Bold", 14)
+                    c.setFont("Helvetica-Bold", 12)
                     c.drawString(50, 700, "الترجمة:")
-                    c.setFont("Helvetica", 12)
-                    c.drawString(50, 680, translated[:80])
+                    c.setFont("Helvetica", 10)
+                    c.drawString(50, 680, translated[:100])
                 
                 c.showPage()
             
             c.save()
-            st.success("✅ تمت العملية بنجاح!")
-            st.download_button("📥 تحميل ملف NovaTrans PDF", pdf_buffer.getvalue(), "NovaTrans.pdf")
+            st.success("✅ تمت العملية!")
+            st.download_button("📥 تحميل PDF", pdf_buffer.getvalue(), "NovaTrans.pdf")
