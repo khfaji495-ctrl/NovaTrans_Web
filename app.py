@@ -1,21 +1,34 @@
 import streamlit as st
-import fitz  # مكتبة قراءة الـ PDF
+import fitz  # مكتبة PyMuPDF لقراءة الـ PDF
+from deep_translator import GoogleTranslator
 
-st.title("NovaTrans Pro - قارئ PDF")
+st.title("NovaTrans Pro - المترجم الذكي")
 
-# زر لرفع الملف
-uploaded_file = st.file_uploader("اختر ملف PDF للترجمة", type="pdf")
+# 1. رفع ملف الـ PDF
+uploaded_file = st.file_uploader("ارفع الملزمة (PDF) هنا:", type="pdf")
 
-if uploaded_file is not None:
-    # فتح ملف الـ PDF
+if uploaded_file:
+    # 2. قراءة الملف
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    all_text = ""
     
-    st.write(f"عدد الصفحات: {len(doc)}")
+    # استخراج النص من الصفحات
+    for page in doc:
+        all_text += page.get_text()
     
-    # عرض الصفحة الأولى كمثال
-    page = doc.load_page(0)
-    text = page.get_text()
+    st.success("تم رفع الملف بنجاح! جاري التحضير للترجمة...")
     
-    st.text_area("نص الصفحة الأولى:", text, height=300)
-else:
-    st.info("الرجاء رفع ملف PDF للبدء.")
+    # 3. زر الترجمة
+    if st.button("ترجم الآن"):
+        with st.spinner("جاري الترجمة، انتظر قليلاً..."):
+            # تقسيم النص لترجمته (لأن المترجم له حد أقصى للحروف)
+            lines = all_text.split('\n')
+            final_output = ""
+            
+            for line in lines:
+                if line.strip(): # إذا كان السطر يحتوي نصاً
+                    translated = GoogleTranslator(source='en', target='ar').translate(line)
+                    final_output += f"{line}\n{translated}\n\n"
+            
+            st.text_area("النتيجة (نصك الأصلي + الترجمة):", final_output, height=500)
+            st.download_button("حفظ النص المترجم", final_output)
