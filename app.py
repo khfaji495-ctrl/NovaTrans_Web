@@ -18,7 +18,7 @@ def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ارفع ملف الـ PDF هنا", type="pdf")
+uploaded_file = st.file_uploader("📂 حط ملفك هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -37,7 +37,7 @@ if uploaded_file is not None:
             
             y = 800
 
-            st.info("💡 نصيحة: الترجمة تأخذ وقتاً بسيطاً لضمان الجودة وعدم انقطاع الخدمة.")
+            st.info("💡 انتظر الترجمه تاخذ وقت.")
             
             # حلقة الصفحات
             for i in range(start - 1, end):
@@ -72,7 +72,7 @@ if uploaded_file is not None:
             pdf_buffer.seek(0)
             
             # إظهار زر التحميل بعد التأكد من سلامة العملية
-            st.success("✅ تمت العملية بنجاح!")
+            st.success("✅ اخذ ملفك وروح!")
             st.download_button(
                 label="📥 تحميل الملف المترجم PDF",
                 data=pdf_buffer,
