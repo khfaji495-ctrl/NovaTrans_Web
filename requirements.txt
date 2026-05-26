@@ -1,6 +1,9 @@
 streamlit
-deep-translator
 pymupdf
+deep-translator
 reportlab
 arabic-reshaper
 python-bidi
+easyocr
+numpy
+pillow
