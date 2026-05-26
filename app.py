@@ -1,63 +1,71 @@
 import streamlit as st
 import fitz
-import easyocr
-import io
-import numpy as np
-from PIL import Image, ImageDraw
 from deep_translator import GoogleTranslator
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from bidi.algorithm import get_display
+import arabic_reshaper
+import io
 
-# 1. إعدادات الواجهة
-st.set_page_config(page_title="NovaTrans", layout="wide")
-st.markdown("<style>.stApp { background-color: #333; } h1 { color: #39ff14; text-align: center; }</style>", unsafe_allow_html=True)
-st.title("NovaTrans")
+# --- الإعدادات والواجهة (Neon Style) ---
+st.set_page_config(page_title="NovaTrans Pro", layout="wide")
+st.markdown("""
+    <style>
+    .stApp { background-color: #060911; color: white; }
+    h1 { color: #ff00ff; text-align: center; text-shadow: 0 0 10px #ff00ff; }
+    </style>
+""", unsafe_allow_html=True)
 
-@st.cache_resource
-def load_reader():
-    return easyocr.Reader(['en'])
+st.title("✨ NovaTrans Pro")
 
-reader = load_reader()
+# --- دوال المعالجة ---
+def prepare_arabic_text(text):
+    reshaped_text = arabic_reshaper.reshape(text)
+    return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ارفع ملزمة PDF:", type=["pdf"])
+# --- واجهة المستخدم ---
+uploaded_file = st.file_uploader("📂 ارفع ملف الـ PDF هنا", type="pdf")
 
 if uploaded_file:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    total_pages = len(doc)
     
-    if st.button("🚀 معالجة وترجمة"):
-        with st.spinner("جاري التحليل..."):
+    start = st.number_input("من صفحة:", 1, total_pages, 1)
+    end = st.number_input("إلى صفحة:", 1, total_pages, start)
+
+    if st.button("🚀 ترجم واحفظ PDF"):
+        with st.spinner("جاري المعالجة..."):
             pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer, pagesize=letter)
+            c = canvas.Canvas(pdf_buffer)
             
-            for page in doc:
-                # محاولة استخراج النص
-                text = page.get_text()
+            # تسجيل الخط (تأكد من وجود font.ttf في المستودع)
+            pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+            
+            y = 800
+            for i in range(start - 1, end):
+                text = doc.load_page(i).get_text()
+                lines = text.split('\n')
                 
-                # إذا كان النص رموزاً أو فارغاً، نستخدم OCR
-                if len(text.strip()) < 10:
-                    pix = page.get_pixmap()
-                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                    results = reader.readtext(np.array(img))
-                    
-                    # تجميع النص من الـ OCR
-                    text = " ".join([res[1] for res in results])
-                
-                # الترجمة
-                if text.strip():
-                    translated = GoogleTranslator(source='auto', target='ar').translate(text[:2000])
-                    
-                    c.setFont("Helvetica-Bold", 12)
-                    c.drawString(50, 750, "English Text (Extracted):")
-                    c.setFont("Helvetica", 10)
-                    c.drawString(50, 730, text[:100])
-                    
-                    c.setFont("Helvetica-Bold", 12)
-                    c.drawString(50, 700, "الترجمة:")
-                    c.setFont("Helvetica", 10)
-                    c.drawString(50, 680, translated[:100])
-                
-                c.showPage()
+                for line in lines:
+                    if line.strip():
+                        if y < 100:
+                            c.showPage()
+                            y = 800
+                        
+                        # ترجمة
+                        translated = GoogleTranslator(source='en', target='ar').translate(line)
+                        proper_arabic = prepare_arabic_text(translated)
+                        
+                        # طباعة النص
+                        c.setFont("Helvetica", 12)
+                        c.drawString(50, y, line)
+                        y -= 20
+                        c.setFont("Arabic", 12)
+                        c.drawString(50, y, proper_arabic)
+                        y -= 40
             
             c.save()
-            st.success("✅ تمت العملية!")
-            st.download_button("📥 تحميل PDF", pdf_buffer.getvalue(), "NovaTrans.pdf")
+            pdf_buffer.seek(0)
+            st.success("✅ تم الانتهاء!")
+            st.download_button("📥 تحميل الملف المترجم PDF", pdf_buffer, "NovaTrans_Translated.pdf")
