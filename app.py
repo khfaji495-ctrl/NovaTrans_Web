@@ -1,54 +1,47 @@
 import streamlit as st
 import fitz  # PyMuPDF
-from fpdf import FPDF
 import deepl
 import os
 import arabic_reshaper
 from bidi.algorithm import get_display
 
-# إعداد المترجم
 auth_key = os.environ.get("DEEPL_API_KEY")
 translator = deepl.Translator(auth_key)
 
-st.title("NovaTrans Pro - معالجة متقدمة")
+st.title("NovaTrans - المترجم المباشر")
 
-uploaded_file = st.file_uploader("📂 ارفع ملف PDF", type="pdf")
+uploaded_file = st.file_uploader("ارفع ملف PDF", type="pdf")
 
-if uploaded_file and st.button("ترجمة مع الحفاظ على التنسيق"):
+if uploaded_file and st.button("ترجمة"):
+    # فتح الملف الأصلي مباشرة
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    pdf = FPDF()
     
-    with st.spinner("جاري معالجة الصفحة كصورة..."):
-        for page in doc:
-            pdf.add_page()
-            
-            # 1. تحويل الصفحة لصور (Snapshot)
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # دقة عالية
-            img_path = f"page_{page.number}.png"
-            pix.save(img_path)
-            
-            # 2. وضع الصورة كخلفية
-            pdf.image(img_path, x=0, y=0, w=210) # A4 width
-            os.remove(img_path)
-            
-            # 3. طباعة النص المترجم فوق الصورة
-            pdf.add_font("ArabicFont", "", "font.ttf", uni=True)
-            text = page.get_text()
-            
-            y_pos = 20 # بداية الكتابة من أعلى الصفحة
-            for line in text.split('\n'):
-                if line.strip():
-                    try:
-                        res = translator.translate_text(line, target_lang="AR").text
-                        bidi_text = get_display(arabic_reshaper.reshape(res))
-                        
-                        pdf.set_font("ArabicFont", size=12)
-                        pdf.set_xy(10, y_pos) # ضبط مكان النص
-                        pdf.cell(190, 10, txt=bidi_text, ln=True, align='R')
-                        y_pos += 15 # المسافة بين الأسطر
-                    except:
-                        continue
-
-    pdf_output = pdf.output(dest='S').encode('latin-1')
-    st.success("✅ تمت العملية!")
-    st.download_button("📥 تحميل الملف النهائي", pdf_output, "Translated_Doc.pdf", "application/pdf")
+    for page in doc:
+        # 1. إيجاد النصوص في الصفحة
+        text_instances = page.get_text("dict")["blocks"]
+        
+        for block in text_instances:
+            if "lines" in block:
+                for line in block["lines"]:
+                    # استخراج النص من السطر
+                    raw_text = "".join([span["text"] for span in line["spans"]])
+                    
+                    if raw_text.strip():
+                        # ترجمة
+                        try:
+                            res = translator.translate_text(raw_text, target_lang="AR").text
+                            bidi_text = get_display(arabic_reshaper.reshape(res))
+                            
+                            # رسم مستطيل أبيض لتغطية النص الأصلي (اختياري)
+                            # page.draw_rect(line["bbox"], color=(1, 1, 1), fill=(1, 1, 1))
+                            
+                            # كتابة الترجمة العربية في مكان النص الأصلي
+                            page.insert_text(line["bbox"][:2], bidi_text, fontname="helv", fontsize=10, color=(0, 0, 0))
+                        except:
+                            continue
+                            
+    # حفظ الملف المعدل
+    output_buffer = io.BytesIO()
+    doc.save(output_buffer)
+    st.success("✅ تمت المعالجة!")
+    st.download_button("تحميل", output_buffer.getvalue(), "Translated.pdf")
