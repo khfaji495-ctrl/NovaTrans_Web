@@ -7,8 +7,9 @@ from deep_translator import GoogleTranslator
 import numpy as np
 import arabic_reshaper
 from bidi.algorithm import get_display
+from reportlab.pdfgen import canvas
 
-# إعدادات الواجهة النيون الأخضر
+# --- الإعدادات والواجهة النيون ---
 st.set_page_config(page_title="NovaTrans Pro - AI", layout="wide")
 st.markdown("""
     <style>
@@ -25,47 +26,54 @@ def load_reader():
 
 reader = load_reader()
 
-uploaded_file = st.file_uploader("📂 ارفع ملزمة (صور أو PDF):", type=["pdf", "jpg", "png"])
+uploaded_file = st.file_uploader("📂 ارفع ملزمة (PDF):", type=["pdf"])
 
 if uploaded_file:
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    total_pages = len(doc)
+    
+    start_page = st.number_input("من صفحة:", 1, total_pages, 1)
+    end_page = st.number_input("إلى صفحة:", 1, total_pages, start_page)
+
     if st.button("🚀 معالجة وترجمة بصرية"):
         with st.spinner("جاري التحليل والترجمة الذكية..."):
-            # تحويل الملف إلى صورة
-            if uploaded_file.type == "application/pdf":
-                doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-                pix = doc.load_page(0).get_pixmap()
-                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            else:
-                img = Image.open(uploaded_file)
+            pdf_buffer = io.BytesIO()
+            c = canvas.Canvas(pdf_buffer)
             
-            results = reader.readtext(np.array(img))
-            draw = ImageDraw.Draw(img)
-            
-            # تحميل خط عربي (تأكد من وجود font.ttf في المستودع)
             try:
-                font = ImageFont.truetype("font.ttf", 20)
+                font = ImageFont.truetype("font.ttf", 16)
             except:
                 font = ImageFont.load_default()
 
-            for (bbox, text, prob) in results:
-                if prob > 0.2:
-                    # 1. الترجمة
-                    translated = GoogleTranslator(source='en', target='ar').translate(text)
-                    
-                    # 2. معالجة النص العربي (الربط والاتجاه)
-                    reshaped_text = arabic_reshaper.reshape(translated)
-                    bidi_text = get_display(reshaped_text)
-                    
-                    # 3. الرسم فوق النص الأصلي
-                    x0, y0 = bbox[0]
-                    x1, y1 = bbox[2]
-                    draw.rectangle([x0, y0, x1, y1], fill="white")
-                    
-                    # 4. كتابة الترجمة
-                    draw.text((x0, y0), bidi_text, fill="black", font=font)
+            for page_num in range(start_page - 1, end_page):
+                pix = doc.load_page(page_num).get_pixmap()
+                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                draw = ImageDraw.Draw(img)
+                results = reader.readtext(np.array(img))
+                
+                for (bbox, text, prob) in results:
+                    if prob > 0.2:
+                        translated = GoogleTranslator(source='en', target='ar').translate(text)
+                        reshaped_text = arabic_reshaper.reshape(translated)
+                        bidi_text = get_display(reshaped_text)
+                        
+                        x0, y0 = int(bbox[0][0]), int(bbox[0][1])
+                        x1, y1 = int(bbox[2][0]), int(bbox[2][1])
+                        
+                        # رسم الخلفية البيضاء
+                        draw.rectangle([x0, y0 - 30, x1, y1 + 10], fill="white")
+                        # طباعة الإنجليزي فوق
+                        draw.text((x0, y0 - 25), text, fill="black", font=font)
+                        # طباعة العربي تحت
+                        draw.text((x0, y0), bidi_text, fill="black", font=font)
+                
+                # حفظ الصورة المترجمة كصفحة في الـ PDF
+                img_byte_arr = io.BytesIO()
+                img.save(img_byte_arr, format='PNG')
+                c.setPageSize((pix.width, pix.height))
+                c.drawImage(io.BytesIO(img_byte_arr.getvalue()), 0, 0, width=pix.width, height=pix.height)
+                c.showPage()
             
-            st.image(img, caption="النتيجة بعد الترجمة البصرية", use_column_width=True)
-            
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            st.download_button("📥 تحميل الصورة المترجمة", buf.getvalue(), "translated.png")
+            c.save()
+            st.success("✅ تم الانتهاء بنجاح!")
+            st.download_button("📥 تحميل الملزمة المترجمة PDF", pdf_buffer.getvalue(), "NovaTrans_Result.pdf")
