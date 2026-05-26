@@ -18,7 +18,7 @@ def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-uploaded_file = st.file_uploader("📂 ضع ملفك هنا", type="pdf")
+uploaded_file = st.file_uploader("📂 ارفع ملف الـ PDF هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -26,26 +26,8 @@ if uploaded_file is not None:
     start = st.number_input("من صفحة:", 1, total_pages, 1)
     end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("ترجمه PDF"):
+    if st.button("🚀 ترجم واحفظ PDF"):
         with st.spinner("جاري المعالجة..."):
-            # داخل حلقة الصفحات (for i in range(start - 1, end):)
-for i in range(start - 1, end):
-    # 1. افتح صفحة جديدة لكل صفحة
-    page_buffer = io.BytesIO()
-    c = canvas.Canvas(page_buffer)
-    # ... (كود تسجيل الخط والرسم) ...
-    
-    # 2. احفظ الصفحة فوراً
-    c.save()
-    page_buffer.seek(0)
-    
-    # 3. اعرض زر تحميل خاص بهذه الصفحة
-    st.download_button(
-        label=f"📥 تحميل الصفحة {i + 1}",
-        data=page_buffer,
-        file_name=f"page_{i + 1}.pdf",
-        mime="application/pdf"
-    )
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             try:
@@ -54,9 +36,6 @@ for i in range(start - 1, end):
                 st.warning("تنبيه: ملف الخط غير موجود.")
             
             y = 800
-
-            st.info("💡 تنبيه .  انتظر الترجمه تأخذ وقتاً بسيطاً لضمان الجوده.")
-            
             # حلقة الصفحات
             for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
@@ -82,7 +61,8 @@ for i in range(start - 1, end):
                             y -= 40
                         except:
                             continue
-           # ... بعد نهاية حلقات الترجمة ...
+            
+          # ... بعد نهاية حلقات الترجمة ...
             
             c.save() # حفظ ملف الـ PDF
             
@@ -90,9 +70,9 @@ for i in range(start - 1, end):
             pdf_buffer.seek(0)
             
             # إظهار زر التحميل بعد التأكد من سلامة العملية
-            st.success("✅ ااكتمل الملف!")
+            st.success("✅ تمت العملية بنجاح!")
             st.download_button(
-                label="📥  PDF تحميل الملف ",
+                label="📥 تحميل الملف المترجم PDF",
                 data=pdf_buffer,
                 file_name="NovaTrans_Translated.pdf",
                 mime="application/pdf"
