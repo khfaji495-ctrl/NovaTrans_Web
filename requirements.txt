@@ -4,3 +4,5 @@ reportlab
 arabic-reshaper
 python-bidi
 deepl
+pytesseract
+pdf2image
