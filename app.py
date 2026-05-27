@@ -9,9 +9,9 @@ import arabic_reshaper
 import io
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="NovaTrans Pro", layout="wide")
+st.set_page_config(page_title="سيد قط - Sayed Qatt", layout="wide")
 
-# كود CSS: (إخفاء الأدوات + الخلفية + التنسيق)
+# كود CSS: إخفاء القائمة + الخلفية + التنسيق
 page_design = """
 <style>
 /* إخفاء قائمة Streamlit وأدوات المطورين */
@@ -42,13 +42,13 @@ header {visibility: hidden;}
 """
 st.markdown(page_design, unsafe_allow_html=True)
 
-# 2. عرض الـ GIF العنوان
+# 2. عرض الـ GIF والعنوان
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif", use_container_width=True)
 
-st.markdown('<p class="main-title">NovaTrans Pro</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">مساعدك الذكي لترجمة الملازم الهندسية والطبية</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">سيد قط - Sayed Qatt</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
 
 # 3. إعداد مترجم DeepL
 try:
@@ -64,7 +64,7 @@ def prepare_arabic_text(text):
 
 # 4. واجهة رفع الملفات
 st.divider()
-uploaded_file = st.file_uploader("🐈 اسحب ملف الملزمة هنا (PDF)", type="pdf")
+uploaded_file = st.file_uploader("📂 اسحب ملف الملزمة هنا (PDF)", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -76,8 +76,8 @@ if uploaded_file is not None:
     with c2:
         end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("🐈 ابدأ الترجمة"):
-        with st.spinner(" 🐈جاري ترجمة الملزمة.. يرجى الانتظار"):
+    if st.button("🐱 ابدأ الترجمة مع سيد قط"):
+        with st.spinner("  🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار "):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             
@@ -113,10 +113,10 @@ if uploaded_file is not None:
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("🐈 تمت العملية بنجاح!")
+            st.success("😼 سيد قط أتم المهمة بنجاح!")
             st.download_button(
-                label="📥 تحميل الملزمة المترجمة",
+                label="😸 تحميل الملزمة من سيد قط",
                 data=pdf_buffer,
-                file_name="NovaTrans_Translated.pdf",
+                file_name="SayedQatt_Translated.pdf",
                 mime="application/pdf"
             )
