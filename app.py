@@ -113,7 +113,7 @@ if uploaded_file is not None:
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("😼. سيد قط أتم المهمة بنجاح!")
+            st.success("😼 سيد قط أتم المهمة بنجاح!")
             st.download_button(
                 label="😸 تحميل الملزمة من سيد قط",
                 data=pdf_buffer,
