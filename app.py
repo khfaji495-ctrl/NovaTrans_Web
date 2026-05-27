@@ -7,27 +7,35 @@ from reportlab.pdfbase.ttfonts import TTFont
 from bidi.algorithm import get_display
 import arabic_reshaper
 import io
+import os
 
-# --- التعديل 1: إعدادات الواجهة واللون الأسود ---
+# 1. إعدادات الصفحة
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
 
+# 2. كود CSS قوي جداً (تم إضافة !important لضمان التنفيذ)
 st.markdown("""
     <style>
     .stApp {
-        background-color: #0e1117;
-        color: #ffffff;
+        background-color: #0e1117 !important;
+        color: white !important;
     }
     .pixel-cat {
         display: flex;
         justify-content: center;
-        margin-bottom: 20px;
+        padding-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- التعديل 2: إضافة القط المبكسل ---
-# تأكد أن تضع ملف cat_pixel.gif في نفس مجلد الكود
+# 3. عرض الصورة بطريقة مباشرة (بدون تعقيد)
 st.markdown('<div class="pixel-cat">', unsafe_allow_html=True)
+try:
+    st.image("cat_pixel.gif", width=300)
+except:
+    st.write("🐱 جاري تحميل القط المبكسل...")
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.title("🐱 NovaTrans Pro - Workspace")
 st.image("cat_pixel.gif", width=300) 
 st.markdown('</div>', unsafe_allow_html=True)
 
