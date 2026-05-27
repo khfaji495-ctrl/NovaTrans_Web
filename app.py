@@ -8,66 +8,64 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 import pytesseract
-from pdf2image import convert_from_bytes
+from PIL import Image
 
-# (استخدم نفس إعداداتك السابقة للـ CSS والـ UI)
+# إعدادات الـ OCR (تأكد من تثبيت tesseract-ocr على السيرفر)
+# pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract' # قد تحتاج لهذا المسار على السيرفر
 
-def extract_text_from_page(doc, page_num):
-    page = doc.load_page(page_num)
-    text = page.get_text()
-    # إذا كان النص أقل من 50 حرفاً، نفترض أنها صورة ونستخدم OCR
-    if len(text.strip()) < 50:
-        pix = page.get_pixmap()
-        img_data = pix.tobytes("png")
-        text = pytesseract.image_to_string(img_data, lang='eng')
-    return text
+# ... (نفس إعدادات CSS والـ UI السابقة) ...
 
-# في جزء زر الترجمة:
-if st.button("😸 ابدأ الترجمة مع سيد قط"):
-    with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer)
-        
-        try:
-            pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-        except:
-            st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود.")
-        
-        y = 800 
-        for i in range(start - 1, end):
-            # استخدام الدالة الذكية التي تستخرج النص أو تقرأ الصورة
-            full_text = extract_text_from_page(doc, i)
-            # دمج الفقرات لتجنب المسافات العشوائية
-            clean_text = " ".join(full_text.split())
+if uploaded_file is not None:
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    # ... (نفس كود المدخلات start/end) ...
+
+    if st.button("😸 ابدأ الترجمة مع سيد قط"):
+        with st.spinner("🐈 سيد قط يعمل الآن.. يرجى الانتظار"):
+            pdf_buffer = io.BytesIO()
+            c = canvas.Canvas(pdf_buffer)
             
-            if clean_text:
-                if y < 100:
-                    c.showPage()
-                    y = 800
+            try:
+                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+            except:
+                st.warning("⚠️ ملف الخط (font.ttf) مفقود.")
+            
+            y = 800
+            for i in range(start - 1, end):
+                page = doc.load_page(i)
+                text = page.get_text().strip()
                 
-                # ترجمة الفقرة كاملة
-                result = translator.translate_text(clean_text, target_lang="AR")
-                proper_arabic = get_display(arabic_reshaper.reshape(result.text))
+                # منطق الـ OCR الذكي: إذا كان النص فارغاً أو أقل من 20 حرفاً
+                if len(text) < 20:
+                    pix = page.get_pixmap()
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    text = pytesseract.image_to_string(img, lang='eng').strip()
                 
-                # طباعة الإنجليزي ثم العربي
-                c.setFont("Helvetica", 12)
-                c.drawString(50, y, "Original Text:")
-                y -= 20
-                c.setFont("Helvetica", 10)
-                # استخدام split-text-by-width لضمان عدم خروج النص عن الصفحة
-                from reportlab.lib.utils import simpleSplit
-                lines = simpleSplit(clean_text, "Helvetica", 10, 500)
-                for line in lines:
-                    c.drawString(50, y, line)
-                    y -= 15
+                # تنظيف النص ودمجه
+                clean_text = " ".join(text.split())
                 
-                y -= 10
-                c.setFont("Arabic", 12)
-                # رسم النص العربي بوضوح
-                c.rightDrawString(550, y, proper_arabic)
-                y -= 40 # المسافة الثابتة بين كل فقرة وأخرى
-        
-        c.save()
-        pdf_buffer.seek(0)
-        st.success("😼سيد قط أتم المهمة بنجاح!")
-        # (زر التحميل كما هو)
+                if clean_text:
+                    if y < 100:
+                        c.showPage()
+                        y = 800
+                    
+                    # طباعة الإنجليزي
+                    c.setFont("Helvetica", 10)
+                    c.drawString(50, y, clean_text[:120])
+                    y -= 20
+                    
+                    # الترجمة
+                    try:
+                        result = translator.translate_text(clean_text, target_lang="AR")
+                        proper_arabic = get_display(arabic_reshaper.reshape(result.text))
+                        
+                        c.setFont("Arabic", 10)
+                        # استخدام drawRightString للمحاذاة اليمينية الصحيحة
+                        c.drawRightString(550, y, proper_arabic)
+                        y -= 35 # المسافة المحددة بين الفقرات
+                    except:
+                        continue
+            
+            c.save()
+            pdf_buffer.seek(0)
+            st.success("✅ سيد قط أتم المهمة!")
+            # ... (كود زر التحميل) ...
