@@ -12,36 +12,16 @@ import os
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
 
-# 2. كود CSS قوي جداً (تم إضافة !important لضمان التنفيذ)
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: #0e1117 !important;
-        color: white !important;
-    }
-    .pixel-cat {
-        display: flex;
-        justify-content: center;
-        padding-top: 20px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# 2. عرض القط (يجب أن يكون في نفس مجلد الكود)
+# ملاحظة: إذا كان اسم الملف مختلفاً تأكد من تغييره هنا
+if os.path.exists("cat_pixel.gif"):
+    st.image("cat_pixel.gif", width=200)
+else:
+    st.write("🐱 *القط المبرمج جاهز للعمل*")
 
-# 3. عرض الصورة بطريقة مباشرة (بدون تعقيد)
-st.markdown('<div class="pixel-cat">', unsafe_allow_html=True)
-try:
-    st.image("cat_pixel.gif", width=300)
-except:
-    st.write("🐱 جاري تحميل القط المبكسل...")
-st.markdown('</div>', unsafe_allow_html=True)
+st.title("NovaTrans Pro - ترجمة الملازم")
 
-st.title("🐱 NovaTrans Pro - Workspace")
-st.image("cat_pixel.gif", width=300) 
-st.markdown('</div>', unsafe_allow_html=True)
-
-st.title("🐱 NovaTrans Pro - Workspace")
-
-# إعداد مترجم DeepL (نفس كودك السابق)
+# 3. إعداد مترجم DeepL
 try:
     auth_key = st.secrets["DEEPL_API_KEY"]
     translator = deepl.Translator(auth_key)
@@ -53,8 +33,8 @@ def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-# --- واجهة العمل ---
-uploaded_file = st.file_uploader("📂 اسحب ملف الملزمة هنا", type="pdf")
+# 4. واجهة الرفع
+uploaded_file = st.file_uploader("📂 ضع ملف الملزمة هنا", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -64,8 +44,36 @@ if uploaded_file is not None:
     start = col1.number_input("من صفحة:", 1, total_pages, 1)
     end = col2.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button(" ابدأ الترجمة"):
-        with st.spinner("القط يقوم بمعالجة البيانات... مياو! 🐱"):
-            # ... (نفس كودك السابق لمعالجة الـ PDF) ...
-            # ضع كود المعالجة الخاص بك هنا كما هو
-            pass
+    if st.button("🚀 ابدأ الترجمة"):
+        with st.spinner("جاري المعالجة..."):
+            pdf_buffer = io.BytesIO()
+            c = canvas.Canvas(pdf_buffer)
+            try:
+                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+            except:
+                st.warning("تنبيه: ملف الخط (font.ttf) غير موجود.")
+            
+            y = 800 
+            for i in range(start - 1, end):
+                text = doc.load_page(i).get_text()
+                lines = text.split('\n')
+                for line in lines:
+                    if line.strip():
+                        if y < 100:
+                            c.showPage()
+                            y = 800
+                        c.setFont("Helvetica", 12)
+                        c.drawString(50, y, line[:80])
+                        y -= 20
+                        try:
+                            result = translator.translate_text(line, target_lang="AR")
+                            proper_arabic = prepare_arabic_text(result.text)
+                            c.setFont("Arabic", 12)
+                            c.drawString(50, y, proper_arabic)
+                            y -= 40
+                        except:
+                            continue
+            c.save()
+            pdf_buffer.seek(0)
+            st.success("✅ تمت المعالجة!")
+            st.download_button("📥 تحميل الملزمة المترجمة", pdf_buffer, "NovaTrans_Translated.pdf", "application/pdf")
