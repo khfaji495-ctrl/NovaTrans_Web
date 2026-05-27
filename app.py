@@ -9,7 +9,7 @@ import arabic_reshaper
 import io
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="سيد قط - Sayed Qatt", layout="wide")
+st.set_page_config(page_title="سيد قط ", layout="wide")
 
 # كود CSS: إخفاء القائمة + الخلفية + التنسيق
 page_design = """
@@ -47,7 +47,7 @@ col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif", use_container_width=True)
 
-st.markdown('<p class="main-title">سيد قط - Sayed Qatt</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">سيد قط </p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
 
 # 3. إعداد مترجم DeepL
@@ -64,7 +64,7 @@ def prepare_arabic_text(text):
 
 # 4. واجهة رفع الملفات
 st.divider()
-uploaded_file = st.file_uploader("📂 اسحب ملف الملزمة هنا (PDF)", type="pdf")
+uploaded_file = st.file_uploader(" 😸 ارسل الملزمه للسيد قط", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -76,8 +76,8 @@ if uploaded_file is not None:
     with c2:
         end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("🚀 ابدأ الترجمة مع سيد قط"):
-        with st.spinner("سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
+    if st.button("😸 ابدأ الترجمة مع سيد قط"):
+        with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             
@@ -113,9 +113,9 @@ if uploaded_file is not None:
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("✅ سيد قط أتم المهمة بنجاح!")
+            st.success("😼سيد قط أتم المهمة بنجاح!")
             st.download_button(
-                label="📥 تحميل الملزمة من سيد قط",
+                label="😸 تحميل الملزمة من سيد قط",
                 data=pdf_buffer,
                 file_name="SayedQatt_Translated.pdf",
                 mime="application/pdf"
