@@ -47,7 +47,7 @@ col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif", use_container_width=True)
 
-st.markdown('<p class="main-title">سيد قط - Sayed Qatt</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title"> المترجم سيد قط </p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
 
 # 3. إعداد مترجم DeepL
