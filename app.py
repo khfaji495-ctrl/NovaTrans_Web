@@ -8,12 +8,17 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 
-# 1. إعدادات الصفحة والخلفية (CSS)
+# 1. إعدادات الصفحة
 st.set_page_config(page_title="NovaTrans Pro", layout="wide")
 
-# كود لتغيير الخلفية وتنسيق العنوان
+# كود CSS: (إخفاء الأدوات + الخلفية + التنسيق)
 page_design = """
 <style>
+/* إخفاء قائمة Streamlit وأدوات المطورين */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
 }
@@ -21,7 +26,7 @@ page_design = """
     background-color: rgba(0,0,0,0);
 }
 .main-title {
-    color: #10b981; /* لون أخضر زمردي احترافي */
+    color: #10b981;
     text-align: center;
     font-size: 3.5rem;
     font-weight: bold;
@@ -37,13 +42,13 @@ page_design = """
 """
 st.markdown(page_design, unsafe_allow_html=True)
 
-# 2. عرض الـ GIF المتحرك والعنوان في المنتصف
+# 2. عرض الـ GIF العنوان
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif", use_container_width=True)
 
 st.markdown('<p class="main-title">NovaTrans Pro</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">مساعدك الذكي لترجمة الملازم الهندسية والتقنية</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">مساعدك الذكي لترجمة الملازم الهندسية والطبية</p>', unsafe_allow_html=True)
 
 # 3. إعداد مترجم DeepL
 try:
@@ -57,9 +62,9 @@ def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-# 4. واجهة رفع الملفات والتحكم
+# 4. واجهة رفع الملفات
 st.divider()
-uploaded_file = st.file_uploader("📂 اسحب ملف الملزمة هنا (PDF)", type="pdf")
+uploaded_file = st.file_uploader("🐈 اسحب ملف الملزمة هنا (PDF)", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -71,15 +76,15 @@ if uploaded_file is not None:
     with c2:
         end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("🐱 ابدأ الترجمة"):
-        with st.spinner("جاري ترجمة الملزمة 🐱.. يرجى الانتظار"):
+    if st.button("🐈 ابدأ الترجمة"):
+        with st.spinner(" 🐈جاري ترجمة الملزمة.. يرجى الانتظار"):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
             
             try:
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
             except:
-                st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود في GitHub، سيتم استخدام خط افتراضي.")
+                st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود.")
             
             y = 800 
             for i in range(start - 1, end):
@@ -92,12 +97,10 @@ if uploaded_file is not None:
                             c.showPage()
                             y = 800
                         
-                        # النص الأصلي
                         c.setFont("Helvetica", 12)
                         c.drawString(50, y, line[:80])
                         y -= 20
                         
-                        # عملية الترجمة
                         try:
                             result = translator.translate_text(line, target_lang="AR")
                             proper_arabic = prepare_arabic_text(result.text)
@@ -110,9 +113,9 @@ if uploaded_file is not None:
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("🐱 تمت العملية بنجاح!")
+            st.success("🐈 تمت العملية بنجاح!")
             st.download_button(
-                label="🐈 تحميل الملزمة المترجمة",
+                label="📥 تحميل الملزمة المترجمة",
                 data=pdf_buffer,
                 file_name="NovaTrans_Translated.pdf",
                 mime="application/pdf"
