@@ -64,7 +64,7 @@ def prepare_arabic_text(text):
 
 # 4. واجهة رفع الملفات
 st.divider()
-uploaded_file = st.file_uploader("📂 اسحب ملف الملزمة هنا (PDF)", type="pdf")
+uploaded_file = st.file_uploader("😸 اسحب ملف الملزمة هنا (PDF)", type="pdf")
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
