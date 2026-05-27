@@ -1,73 +1,53 @@
 import streamlit as st
 import fitz
 import deepl
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from bidi.algorithm import get_display
+import arabic_reshaper
 import io
 
-# 1. إعدادات الصفحة
-st.set_page_config(page_title="المترجم سيد قط", layout="wide")
+# ... (نفس إعدادات CSS والـ UI السابقة) ...
 
-# CSS لإخفاء القائمة والتنسيق
-page_design = """
-<style>
-#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-[data-testid="stAppViewContainer"] {background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);}
-.main-title {color: #10b981; text-align: center; font-size: 3.5rem; font-weight: bold; margin-top: -50px;}
-.sub-title {color: #cbd5e1; text-align: center; font-size: 1.2rem; margin-bottom: 30px;}
-</style>
-"""
-st.markdown(page_design, unsafe_allow_html=True)
-
-# العنوان
-st.image("cat_pixel.gif", width=200)
-st.markdown('<p class="main-title">المترجم سيد قط</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
-
-# مترجم DeepL
-try:
-    auth_key = st.secrets["DEEPL_API_KEY"]
-    translator = deepl.Translator(auth_key)
-except:
-    st.error("⚠️ خطأ في مفتاح API")
-    st.stop()
-
-# 4. واجهة رفع الملفات
-uploaded_file = st.file_uploader("📂 اسحب ملف الملزمة هنا (PDF)", type="pdf")
-
-if uploaded_file is not None:
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     if st.button("🚀 ابدأ الترجمة مع سيد قط"):
-        with st.spinner("سيد قط يترجم الملزمة.. يرجى الانتظار"):
+        with st.spinner("سيد قط يضبط المسافات.. يرجى الانتظار"):
             pdf_buffer = io.BytesIO()
-            doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-            styles = getSampleStyleSheet()
+            c = canvas.Canvas(pdf_buffer)
             
-            # تسجيل الخط العربي (تأكد أن الملف font.ttf موجود في نفس المجلد)
             try:
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-                style_ar = ParagraphStyle('ArabicStyle', fontName='Arabic', fontSize=12, leading=16, alignment=1)
-                style_en = ParagraphStyle('EnglishStyle', fontName='Helvetica', fontSize=10, leading=12, alignment=0)
             except:
-                st.warning("⚠️ خط ملف الخط (font.ttf) غير موجود.")
-                style_ar = styles["Normal"]
-                style_en = styles["Normal"]
-
-            story = []
-            for i in range(len(doc)):
+                st.warning("⚠️ ملف الخط غير موجود.")
+            
+            y = 750  # بدأنا من مستوى أعلى قليلاً
+            for i in range(start - 1, end):
                 text = doc.load_page(i).get_text()
-                if text.strip():
-                    # ترجمة الفقرة كاملة لزيادة السرعة
-                    translated = translator.translate_text(text, target_lang="AR").text
-                    story.append(Paragraph(text, style_en))
-                    story.append(Spacer(1, 12))
-                    story.append(Paragraph(translated, style_ar))
-                    story.append(Spacer(1, 24))
-
-            doc_pdf.build(story)
+                lines = text.split('\n')
+                
+                for line in lines:
+                    if line.strip():
+                        if y < 50: # صفحة جديدة إذا وصلنا للقاع
+                            c.showPage()
+                            y = 750
+                        
+                        # نص إنجليزي
+                        c.setFont("Helvetica", 10)
+                        c.drawString(50, y, line[:100])
+                        y -= 15 # تقليل المسافة بين العربي والإنجليزي
+                        
+                        try:
+                            result = translator.translate_text(line, target_lang="AR")
+                            # المعالجة الدقيقة للنص العربي
+                            proper_arabic = get_display(arabic_reshaper.reshape(result.text))
+                            
+                            c.setFont("Arabic", 10)
+                            c.rightDrawString(550, y, proper_arabic) # استخدام rightDrawString للمحاذاة لليمين
+                            y -= 25 # مسافة معقولة للسطر التالي
+                        except:
+                            continue
+            
+            c.save()
             pdf_buffer.seek(0)
             st.success("✅ سيد قط أتم المهمة!")
-            st.download_button("📥 تحميل الملزمة", pdf_buffer, "SayedQatt_Translated.pdf", "application/pdf")
+            # ... (باقي زر التحميل) ...
