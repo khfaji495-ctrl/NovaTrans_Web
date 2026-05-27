@@ -9,7 +9,7 @@ import arabic_reshaper
 import io
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="سيد قط - Sayed Qatt", layout="wide")
+st.set_page_config(page_title=" المترجم سيد قط ", layout="wide")
 
 # كود CSS: إخفاء القائمة + الخلفية + التنسيق
 page_design = """
