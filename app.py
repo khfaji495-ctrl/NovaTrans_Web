@@ -4,10 +4,7 @@ import deepl
 from bidi.algorithm import get_display
 import arabic_reshaper
 import io
-from groq import Groq
-
-# إعداد المساعد الجديد (Groq)
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+import os
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
@@ -39,7 +36,7 @@ with tab1:
         auth_key = st.secrets["DEEPL_API_KEY"]
         translator = deepl.Translator(auth_key)
     except Exception as e:
-        st.error("⚠️ خطأ: تأكد من إضافة مفتاح API")
+        st.error("⚠️ خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets")
         st.stop()
 
     def prepare_arabic_text(text):
@@ -51,6 +48,8 @@ with tab1:
     if uploaded_file is not None:
         uploaded_file.seek(0)
         pdf_bytes = uploaded_file.read()
+        
+        # فتح الملف
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         total_pages = len(doc)
         
@@ -60,39 +59,43 @@ with tab1:
 
         if st.button("😸 ابدأ الترجمة مع سيد قط"):
             with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
-                # التسجيل للخط
-                try:
-                    doc.insert_font("font.ttf", fontname="ArabicFont")
-                except:
-                    st.warning("⚠️ ملف الخط (font.ttf) مفقود، قد لا تظهر العربية بشكل صحيح.")
-
-                for i in range(start - 1, end):
-                    page = doc.load_page(i)
-                    blocks = page.get_text("blocks")
-                    
-                    for b in blocks:
-                        text = b[4]
-                        x0, y0, x1, y1 = b[:4]
-                        
-                        # كشف المعادلات البسيطة (إذا وجد رمز رياضي لا تترجم)
-                        is_equation = any(char in text for char in ['=', '+', '-', '/', '*', '^', '\\', '∫', '∑'])
-                        
-                        if text.strip() and not is_equation:
-                            try:
-                                result = translator.translate_text(text, target_lang="AR")
-                                proper_arabic = prepare_arabic_text(result.text)
-                                # الكتابة فوق الصفحة الأصلية
-                                page.insert_text((x0, y1), proper_arabic, fontsize=10, fontname="ArabicFont", color=(0, 0, 0))
-                            except:
-                                continue
-
-                output_buffer = io.BytesIO()
-                doc.save(output_buffer)
-                doc.close()
-                output_buffer.seek(0)
                 
-                st.success("😼سيد قط أتم المهمة بنجاح!")
-                st.download_button("😸 تحميل الملزمة من سيد قط", output_buffer, "SayedQatt_Translated.pdf", "application/pdf")
+                # التأكد من وجود ملف الخط
+                font_path = "font.ttf"
+                if not os.path.exists(font_path):
+                    st.error("⚠️ ملف الخط (font.ttf) غير موجود في المجلد!")
+                else:
+                    # تسجيل الخط
+                    doc.insert_font(fontfile=font_path, fontname="ArabicFont")
+
+                    for i in range(start - 1, end):
+                        page = doc.load_page(i)
+                        blocks = page.get_text("blocks")
+                        
+                        for b in blocks:
+                            text = b[4]
+                            x0, y0, x1, y1 = b[:4]
+                            
+                            # كشف بسيط للمعادلات (تخطي النصوص التي تحتوي رموزاً رياضية)
+                            is_equation = any(char in text for char in ['=', '+', '-', '/', '*', '^', '\\', '∫', '∑'])
+                            
+                            if text.strip() and not is_equation:
+                                try:
+                                    result = translator.translate_text(text, target_lang="AR")
+                                    proper_arabic = prepare_arabic_text(result.text)
+                                    # الرسم فوق الصفحة الأصلية (أضفنا 5 نقاط تحت النص الأصلي)
+                                    page.insert_text((x0, y1 + 5), proper_arabic, fontsize=10, fontname="ArabicFont", color=(0, 0, 0))
+                                except:
+                                    continue
+
+                    # حفظ الملف في الذاكرة
+                    output_buffer = io.BytesIO()
+                    doc.save(output_buffer)
+                    doc.close()
+                    output_buffer.seek(0)
+                    
+                    st.success("😼سيد قط أتم المهمة بنجاح!")
+                    st.download_button("😸 تحميل الملزمة من سيد قط", output_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 
 with tab2:
     st.warning("⚠️ غرفة الدراسة الذكية تحت التطوير حالياً، انتظرنا قريباً! 😸")
