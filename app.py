@@ -1,21 +1,20 @@
 import streamlit as st
 import fitz  # PyMuPDF
 import deepl
+import io
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import ImageReader
 from bidi.algorithm import get_display
 import arabic_reshaper
-import io
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
 
 page_design = """
 <style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }
 .main-title { color: #10b981; text-align: center; font-size: 3.5rem; font-weight: bold; margin-top: -50px; }
 .sub-title { color: #cbd5e1; text-align: center; font-size: 1.2rem; margin-bottom: 30px; }
@@ -23,7 +22,7 @@ header {visibility: hidden;}
 """
 st.markdown(page_design, unsafe_allow_html=True)
 
-# 2. عرض الـ GIF والعنوان
+# 2. العنوان
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif", use_container_width=True)
@@ -71,17 +70,21 @@ if uploaded_file is not None:
             status_text.text(f"جاري معالجة الصفحة {idx + 1} من {total_pages}...")
             page = doc.load_page(i)
             
-            # --- رسم الصور ---
+            # --- رسم الصور في مكانها الأصلي ---
             image_list = page.get_images(full=True)
             for img in image_list:
                 xref = img[0]
                 pix = fitz.Pixmap(doc, xref)
                 img_data = pix.tobytes("png")
+                # استخدام ImageReader لحل مشكلة TypeError
+                img_reader = ImageReader(io.BytesIO(img_data))
+                
                 rects = page.get_image_rects(xref)
                 if rects:
                     rect = rects[0]
+                    # تحويل الإحداثيات لـ ReportLab
                     img_y = page.rect.height - rect.y1 
-                    c.drawImage(io.BytesIO(img_data), rect.x0, img_y, width=rect.width, height=rect.height)
+                    c.drawImage(img_reader, rect.x0, img_y, width=rect.width, height=rect.height)
 
             # --- ترجمة النصوص ---
             text = page.get_text()
