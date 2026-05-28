@@ -107,56 +107,62 @@ if st.button("😺 ابدأ الترجمة مع سيد قط"):
                 page = doc.load_page(i)
 
                 text_dict = page.get_text("dict")
+# المرور على الصفحات
+for i in range(start - 1, end):
 
-             for block in text_dict["blocks"]:
+    page = doc.load_page(i)
 
-    if "lines" in block:
+    text_dict = page.get_text("dict")
 
-        for line in block["lines"]:
+    for block in text_dict["blocks"]:
 
-            line_text = ""
+        if "lines" in block:
 
-            x0 = 0
-            y0 = 0
+            for line in block["lines"]:
 
-            for span in line["spans"]:
+                line_text = ""
 
-                line_text += span["text"] + " "
+                x0 = 0
+                y0 = 0
 
-                x0 = span["bbox"][0]
-                y0 = span["bbox"][1] - 10
+                for span in line["spans"]:
 
-            if line_text.strip():
+                    line_text += span["text"] + " "
 
-                try:
+                    x0 = span["bbox"][0]
+                    y0 = span["bbox"][1] - 10
 
-                    result = translator.translate_text(
-                        line_text,
-                        target_lang="AR"
-                    )
+                if line_text.strip():
 
-                    arabic_text = prepare_arabic_text(result.text)
+                    try:
 
-                    page.draw_rect(
-                        fitz.Rect(
-                            x0 - 2,
-                            y0 - 14,
-                            x0 + 300,
-                            y0 + 2
-                        ),
-                        color=(1, 1, 1),
-                        fill=(1, 1, 1)
-                    )
+                        result = translator.translate_text(
+                            line_text,
+                            target_lang="AR"
+                        )
 
-                    page.insert_text(
-                        (x0, y0 - 3),
-                        arabic_text,
-                        fontsize=9,
-                        color=(1, 0, 0)
-                    )
+                        arabic_text = prepare_arabic_text(result.text)
 
-                except:
-                    pass
+                        page.draw_rect(
+                            fitz.Rect(
+                                x0 - 2,
+                                y0 - 14,
+                                x0 + 300,
+                                y0 + 2
+                            ),
+                            color=(1, 1, 1),
+                            fill=(1, 1, 1)
+                        )
+
+                        page.insert_text(
+                            (x0, y0 - 3),
+                            arabic_text,
+                            fontsize=9,
+                            color=(1, 0, 0)
+                        )
+
+                    except:
+                        pass   pass
 
                                 result = translator.translate_text(
                                     line_text,
