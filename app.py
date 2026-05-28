@@ -14,13 +14,13 @@ page_design = """
 <style>
 #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }
-.main-title { color: #10b981; text-align: center; font-size: 3.5rem; font-weight: bold; margin-top: -20px; }
+.main-title { color: #10b981; text-align: center; font-size: 3.5rem; font-weight: bold; margin-top: -50px; }
 .sub-title { color: #cbd5e1; text-align: center; font-size: 1.2rem; margin-bottom: 30px; }
 </style>
 """
 st.markdown(page_design, unsafe_allow_html=True)
 
-# العنوان و الـ GIF الأساسي
+# العنوان و الـ GIF
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif", use_container_width=True)
@@ -39,20 +39,9 @@ def prepare_arabic_text(text):
     return get_display(arabic_reshaper.reshape(text))
 
 # 4. التبويبات
-# استخدام columns لعرض الـ GIF بجانب النصوص في التبويبات
-tab1_title = "😸 ترجمة السيد قط"
-tab2_title = "👨‍🏫 غرفة الدراسة"
-
-tab1, tab2 = st.tabs([tab1_title, tab2_title])
+tab1, tab2 = st.tabs(["😸 ترجمة السيد قط", "👨‍🏫 غرفة الدراسة"])
 
 with tab1:
-    # إضافة الـ GIF بجانب العنوان في التبويب الأول
-    c1, c2 = st.columns([0.1, 1])
-    with c1:
-        st.image("cati-pixel.gif", width=50)
-    with c2:
-        st.subheader("ترجمة السيد قط")
-        
     uploaded_file = st.file_uploader("ارسل ملفك الى سيد قط", type="pdf")
     if uploaded_file is not None:
         uploaded_file.seek(0)
@@ -80,6 +69,7 @@ with tab1:
                                 if text.strip() and len(text.strip()) > 3:
                                     try:
                                         ar_text = prepare_arabic_text(translator.translate_text(text, target_lang="AR").text)
+                                        # إضافة الترجمة فوق السطر مباشرة بدون مستطيل
                                         new_page.insert_text((x0, y0 - 2), ar_text, fontsize=8, fontname="ArabicFont")
                                     except: continue
             
@@ -89,16 +79,4 @@ with tab1:
 
 with tab2:
     st.header("👨‍🏫 غرفة الدراسة الذكية")
-    
-    # إضافة الأقسام بالصور
-    col_eng, col_med = st.columns(2)
-    
-    with col_eng:
-        st.image("engineering.gif", width=80)
-        st.write("### القسم الهندسي")
-        
-    with col_med:
-        st.image("medical.gif", width=80)
-        st.write("### القسم الطبي")
-
     st.warning("⚠️ هذه الميزة تحت التطوير حالياً، انتظرنا قريباً! 😸")
