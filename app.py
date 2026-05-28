@@ -63,7 +63,7 @@ with tab1:
                 with col_anim1:
                     st.image("cati-pixel.gif") # استدعاء مباشر
                 with col_anim2:
-                    st.markdown("<br><h3>سيد قط يترجم، يرجى الانتظار...</h3>", unsafe_allow_html=True)
+                    st.markdown("<br><h3> يرجى الانتظار...</h3>", unsafe_allow_html=True)
 
             new_doc = fitz.open()
             for i in range(start - 1, end):
