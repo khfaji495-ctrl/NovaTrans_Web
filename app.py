@@ -70,41 +70,29 @@ if uploaded_file is not None:
             status_text.text(f"جاري معالجة الصفحة {idx + 1} من {total_pages}...")
             page = doc.load_page(i)
             
-            # --- رسم الصور في مكانها الأصلي ---
-            image_list = page.get_images(full=True)
-            for img in image_list:
-                xref = img[0]
-                pix = fitz.Pixmap(doc, xref)
-                img_data = pix.tobytes("png")
-                # استخدام ImageReader لحل مشكلة TypeError
-                img_reader = ImageReader(io.BytesIO(img_data))
-                
-                rects = page.get_image_rects(xref)
-                if rects:
-                    rect = rects[0]
-                    # تحويل الإحداثيات لـ ReportLab
-                    img_y = page.rect.height - rect.y1 
-                    c.drawImage(img_reader, rect.x0, img_y, width=rect.width, height=rect.height)
+            # --- تحويل الصفحة الأصلية لصورة (خلفية) ---
+            # ضبط حجم الصفحة الجديدة ليكون مطابقاً للأصلية
+            c.setPageSize((page.rect.width, page.rect.height))
+            
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # جودة عالية
+            img_data = pix.tobytes("png")
+            img_reader = ImageReader(io.BytesIO(img_data))
+            
+            # رسم الصورة (الخلفية)
+            c.drawImage(img_reader, 0, 0, width=page.rect.width, height=page.rect.height)
 
-            # --- ترجمة النصوص ---
+            # --- إضافة الترجمة فوق الصورة ---
             text = page.get_text()
             lines = text.split('\n')
-            y = 750
-            for line in lines:
-                if line.strip():
-                    if y < 100:
-                        c.showPage()
-                        y = 750
-                    c.setFont("Helvetica", 10)
-                    c.drawString(50, y, line[:80])
-                    y -= 15
-                    try:
-                        result = translator.translate_text(line, target_lang="AR")
-                        c.setFont("Arabic", 10)
-                        c.drawString(50, y, prepare_arabic_text(result.text))
-                        y -= 30
-                    except:
-                        continue
+            
+            # الكتابة في نفس إحداثيات النص تقريباً
+            c.setFont("Arabic", 10)
+            for block in page.get_text("blocks"):
+                # block يحتوي على (x0, y0, x1, y1, text, ...)
+                x, y = block[0], block[1]
+                translated_text = translator.translate_text(block[4], target_lang="AR")
+                c.drawString(x, page.rect.height - y - 10, prepare_arabic_text(translated_text.text))
+            
             c.showPage()
             progress_bar.progress((idx + 1) / total_pages)
             
