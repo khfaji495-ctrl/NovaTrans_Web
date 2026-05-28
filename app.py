@@ -61,18 +61,17 @@ with tab1:
                     if os.path.exists("font.ttf"):
                         new_page.insert_font(fontfile="font.ttf", fontname="ArabicFont")
                     
-                    # نحدد إحداثي ثابت لليمين بناءً على عرض الصفحة
-                    right_x = page.rect.width * 0.65
-                    
                     for block in page.get_text("dict")["blocks"]:
                         if "lines" in block:
                             for line in block["lines"]:
                                 text = "".join([s["text"] for s in line["spans"]])
-                                y1 = line["bbox"][3]
+                                x0, y1 = line["bbox"][0], line["bbox"][3]
                                 if text.strip() and len(text.strip()) > 3:
                                     try:
                                         ar_text = prepare_arabic_text(translator.translate_text(text, target_lang="AR").text)
-                                        new_page.insert_text((right_x, y1), ar_text, fontsize=9, fontname="ArabicFont")
+                                        # التعديل هنا: رسم مستطيل أبيض لتغطية ما تحته ثم الكتابة فوقه
+                                        new_page.draw_rect([x0, y1, x0 + 200, y1 + 12], color=(1, 1, 1), fill=(1, 1, 1))
+                                        new_page.insert_text((x0, y1 + 10), ar_text, fontsize=9, fontname="ArabicFont")
                                     except: continue
             
             output = io.BytesIO()
