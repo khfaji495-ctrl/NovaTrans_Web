@@ -4,6 +4,5 @@ deepl
 reportlab
 arabic-reshaper
 python-bidi
-google-generativeai
 gtts
 openai
