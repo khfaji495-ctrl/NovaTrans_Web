@@ -90,7 +90,7 @@ if uploaded_file is not None:
 
 if st.button("😺 ابدأ الترجمة مع سيد قط"):
 
-    with st.spinner("🐈 سيد قط يترجم الملزمة الآن..."):
+    with st.spinner("🐈 سيد قط يترجم الملازمة الآن..."):
 
         try:
 
@@ -101,108 +101,30 @@ if st.button("😺 ابدأ الترجمة مع سيد قط"):
                 filetype="pdf"
             )
 
-           # المرور على الصفحات
-for i in range(start - 1, end):
+            # المرور على الصفحات
+            for i in range(start - 1, end):
 
-    page = doc.load_page(i)
+                page = doc.load_page(i)
 
-    text_dict = page.get_text("dict")
+                text_dict = page.get_text("dict")
 
-    for block in text_dict["blocks"]:
+                for block in text_dict["blocks"]:
 
-        if "lines" in block:
+                    if "lines" in block:
 
-            for line in block["lines"]:
+                        for line in block["lines"]:
 
-                line_text = ""
+                            line_text = ""
 
-                x0 = 0
-                y0 = 0
+                            x0 = 0
+                            y0 = 0
 
-                for span in line["spans"]:
+                            for span in line["spans"]:
 
-                    line_text += span["text"] + " "
+                                line_text += span["text"] + " "
 
-                    x0 = span["bbox"][0]
-                    y0 = span["bbox"][1]
-
-    for block in text_dict["blocks"]:
-
-        if "lines" in block:
-
-            for line in block["lines"]:
-
-                line_text = ""
-
-                x0 = 0
-                y0 = 0
-
-                for span in line["spans"]:
-
-                    line_text += span["text"] + " "
-
-                    x0 = span["bbox"][0]
-                    y0 = span["bbox"][1] - 10
-
-                if line_text.strip():
-
-                    try:
-
-                        result = translator.translate_text(
-                            line_text,
-                            target_lang="AR"
-                        )
-
-                        arabic_text = prepare_arabic_text(result.text)
-
-                        page.draw_rect(
-                            fitz.Rect(
-                                x0 - 2,
-                                y0 - 14,
-                                x0 + 300,
-                                y0 + 2
-                            ),
-                            color=(1, 1, 1),
-                            fill=(1, 1, 1)
-                        )
-
-                        page.insert_text(
-                            (x0, y0 - 3),
-                            arabic_text,
-                            fontsize=9,
-                            color=(1, 0, 0)
-                        )
-
-                    except:
-                        pass   pass
-
-                                result = translator.translate_text(
-                                    line_text,
-                                    target_lang="AR"
-                                )
-
-                                arabic_text = prepare_arabic_text(result.text)
-
-                                page.insert_text(
-                                    (x0, y0 - 12),
-                                    arabic_text,
-                                    fontsize=10,
-                                    color=(1, 0, 0)
-                                )
-
-            output = io.BytesIO()
-            doc.save(output, garbage=4, deflate=True)
-            output.seek(0)
-
-            st.success("😺 تمت الترجمة بنجاح!")
-
-            st.download_button(
-                label="📥 تحميل الملف المترجم",
-                data=output,
-                file_name="translated.pdf",
-                mime="application/pdf"
-            )
+                                x0 = span["bbox"][0]
+                                y0 = span["bbox"][1]
 
         except Exception as e:
-            st.error("حدث خطأ أثناء الترجمة")
-            st.exception(e)
+            st.error(f"حدث خطأ أثناء الترجمة: {e}")
