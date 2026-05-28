@@ -39,7 +39,7 @@ def prepare_arabic_text(text):
     return get_display(arabic_reshaper.reshape(text))
 
 # 4. التبويبات
-tab1, tab2 = st.tabs(["😸 ترجمة الملفات", "👨‍🏫 غرفة الدراسة"])
+tab1, tab2 = st.tabs(["😸 ترجمة السيد قط", "👨‍🏫 غرفة الدراسة"])
 
 with tab1:
     uploaded_file = st.file_uploader("ارفع ملف PDF", type="pdf")
@@ -50,9 +50,9 @@ with tab1:
         start = st.number_input("من صفحة:", 1, len(doc), 1)
         end = st.number_input("إلى صفحة:", 1, len(doc), start)
 
-        if st.button("ابدأ الترجمة"):
+        if st.button("ابدأ الترجمه مع السيد قط"):
             new_doc = fitz.open()
-            with st.spinner("🐈 سيد قط يترجم.."):
+            with st.spinner("....🐈 سيد قط يقوم بالترجمه انتظر .."):
                 for i in range(start - 1, end):
                     page = doc.load_page(i)
                     new_page = new_doc.new_page(width=page.rect.width, height=page.rect.height)
@@ -74,7 +74,7 @@ with tab1:
             
             output = io.BytesIO()
             new_doc.save(output)
-            st.download_button("تحميل الملزمة المترجمة", output.getvalue(), "SayedQatt_Translated.pdf")
+            st.download_button("تحميل ملزمة السيد قط ", output.getvalue(), "SayedQatt_Translated.pdf")
 
 with tab2:
     st.header("👨‍🏫 غرفة الدراسة الذكية")
