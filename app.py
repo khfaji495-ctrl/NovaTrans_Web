@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import fitz
 import deepl
@@ -329,4 +328,3 @@ if uploaded_file is not None:
         st.error("حدث خطأ أثناء معالجة الملف")
 
         st.write(e)
-```
