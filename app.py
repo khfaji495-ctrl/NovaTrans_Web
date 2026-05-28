@@ -3,6 +3,7 @@ import fitz
 import deepl
 import io
 import re
+from PIL import Image
 import arabic_reshaper
 from bidi.algorithm import get_display
 
@@ -10,18 +11,20 @@ st.set_page_config(page_title="سيد قط", layout="wide")
 
 translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 
-# ---------------- Arabic fix ----------------
+# ---------------- Arabic Fix ----------------
 def fix_arabic(text):
-    reshaped = arabic_reshaper.reshape(text)
-    return get_display(reshaped)
+    return get_display(arabic_reshaper.reshape(text))
 
-# ---------------- detect equations ----------------
+# ---------------- Equation Filter ----------------
 def is_equation(text):
     return bool(re.search(r"[=<>±√∑∫]|\\d+\\/\\d+", text))
 
-# ---------------- spacing cleaner ----------------
-def clean_blocks(blocks):
-    return sorted(blocks, key=lambda b: (b[1], b[0]))  # ترتيب حسب Y ثم X
+# ---------------- PDF → Image ----------------
+def page_to_image(page, zoom=2):
+    mat = fitz.Matrix(zoom, zoom)
+    pix = page.get_pixmap(matrix=mat)
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    return img, pix.width, pix.height
 
 # ---------------- UI ----------------
 uploaded_file = st.file_uploader("ارفع PDF", type="pdf")
@@ -32,20 +35,23 @@ if uploaded_file:
     start = st.number_input("من صفحة", 1, len(doc), 1)
     end = st.number_input("إلى صفحة", 1, len(doc), len(doc))
 
-    if st.button("ابدأ الترجمة 😼"):
+    if st.button("ابدأ التحويل 😼"):
         output = io.BytesIO()
         new_doc = fitz.open()
 
         for i in range(start - 1, end):
             page = doc.load_page(i)
 
-            # 🔥 نفس الصفحة (يحافظ على الصور والتنسيق)
-            new_page = new_doc.new_page(width=page.rect.width, height=page.rect.height)
-            new_page.show_pdf_page(page.rect, doc, i)
+            # 🔥 تحويل الصفحة لصورة (يحافظ على الشكل 100%)
+            img, w, h = page_to_image(page, zoom=2)
 
-            blocks = clean_blocks(page.get_text("blocks"))
+            new_page = new_doc.new_page(width=w, height=h)
 
-            last_y = 0
+            # وضع الصورة كخلفية
+            new_page.insert_image(new_page.rect, pixmap=page.get_pixmap(matrix=fitz.Matrix(2,2)))
+
+            blocks = page.get_text("blocks")
+            y_offset = 0
 
             for b in blocks:
                 x0, y0, x1, y1, text = b[:5]
@@ -54,42 +60,36 @@ if uploaded_file:
                 if not text or is_equation(text):
                     continue
 
-                # يمنع التداخل بين الفقرات
-                if abs(y0 - last_y) < 15:
-                    continue
-                last_y = y0
-
                 try:
-                    translated = translator.translate_text(text, target_lang="AR").text
-                    translated = fix_arabic(translated)
+                    ar = translator.translate_text(text, target_lang="AR").text
+                    ar = fix_arabic(ar)
                 except:
                     continue
 
-                # ---------------- ENGLISH (تحت) ----------------
-                new_page.insert_text(
-                    (x0, y0 + 12),
-                    text,
-                    fontsize=10,
-                    color=(0, 0, 0),
-                )
-
-                # ---------------- ARABIC (فوق) ----------------
+                # ---------------- English ----------------
                 new_page.insert_text(
                     (x0, y0),
-                    translated,
+                    text,
+                    fontsize=10,
+                    color=(0, 0, 0)
+                )
+
+                # ---------------- Arabic فوقه ----------------
+                new_page.insert_text(
+                    (x0, y0 - 12),
+                    ar,
                     fontsize=11,
-                    fontname="helv",  # أو arabic font لو متوفر
-                    color=(0.1, 0.5, 0.2),
+                    color=(0.1, 0.6, 0.2)
                 )
 
         new_doc.save(output)
         output.seek(0)
 
-        st.success("تمت المعالجة بنجاح 😼")
+        st.success("تم إنشاء النسخة الاحترافية 😼🔥")
 
         st.download_button(
-            "تحميل الملف",
+            "تحميل الملف النهائي",
             output,
-            file_name="translated.pdf",
+            file_name="SayedQatt_Pro.pdf",
             mime="application/pdf"
         )
