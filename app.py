@@ -11,12 +11,10 @@ import io
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
 
-# كود 
-CSS
 page_design = """
 <style>
 
-/* إخفاء القائمة */
+/* إخفاء قائمة Streamlit */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
