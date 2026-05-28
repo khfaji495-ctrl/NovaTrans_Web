@@ -11,10 +11,11 @@ import io
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
 
-# كود CSS: إخفاء القائمة + الخلفية + التنسيق
-page_design = 
+# كود CSS
+page_design = """
 <style>
-/* إخفاء قائمة Streamlit وأدوات المطورين */
+
+/* إخفاء القائمة */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -22,9 +23,11 @@ header {visibility: hidden;}
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
 }
+
 [data-testid="stHeader"] {
     background-color: rgba(0,0,0,0);
 }
+
 .main-title {
     color: #10b981;
     text-align: center;
@@ -32,13 +35,17 @@ header {visibility: hidden;}
     font-weight: bold;
     margin-top: -50px;
 }
+
 .sub-title {
     color: #cbd5e1;
     text-align: center;
     font-size: 1.2rem;
     margin-bottom: 30px;
 }
+
 </style>
+"""
+
 st.markdown(page_design, unsafe_allow_html=True)
 
 # 2. عرض الـ GIF والعنوان
