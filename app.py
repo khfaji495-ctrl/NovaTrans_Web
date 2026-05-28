@@ -106,34 +106,33 @@ with tab1:
                 st.download_button("😸 تحميل الملزمة من سيد قط", pdf_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 
 with tab2:
-    if st.session_state.uploaded_pdf:
-        st.write("---")
-        user_q = st.text_input("اسأل سيد قط عن الملزمة:")
+    # 1. زر رفع الملف الخاص بغرفة الدراسة
+    uploaded_file_study = st.file_uploader("📥 ارفع الملزمة هنا لغرفة الدراسة", type="pdf", key="study_pdf")
+    
+    if uploaded_file_study:
+        # قراءة النص من الملف
+        doc = fitz.open(stream=uploaded_file_study.read(), filetype="pdf")
+        full_text = ""
+        for page in doc:
+            full_text += page.get_text()
+            
+        # إنشاء تبويبات فرعية داخل الغرفة
+        sub_tab1, sub_tab2 = st.tabs(["📄 محتوى الملزمة", "💬 مناقشة المساعد"])
         
-        # شرط لمنع إرسال طلبات فارغة
-        if user_q and user_q.strip() != "":
-            with st.spinner("سيد قط يحلل المعلومات..."):
-                try:
-                    # طلب الشرح من Groq
+        with sub_tab1:
+            st.text_area("نص الملزمة:", value=full_text, height=400)
+            
+        with sub_tab2:
+            user_q = st.text_input("اسأل سيد قط عن هذا المحتوى:")
+            if user_q:
+                with st.spinner("سيد قط يحلل..."):
                     response = client.chat.completions.create(
                         model="llama-3.1-8b-instant",
                         messages=[
-                            {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم العلمية بلهجة عراقية بسيطة ومفهومة."},
-                            {"role": "user", "content": f"بناءً على الملزمة، اشرح لي هذا بلهجة عراقية: {user_q}"}
+                            {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، خبير في شرح الملازم. استخدم نص الملزمة الذي سأعطيك إياه للشرح بلهجة عراقية."},
+                            {"role": "user", "content": f"نص الملزمة: {full_text[:5000]} \n\n سؤال: {user_q}"}
                         ]
                     )
-                    
-                    response_text = response.choices[0].message.content
-                    st.write(response_text)
-                    
-                    if st.button("🔊 اسمع الشرح"):
-                        tts = gTTS(text=response_text, lang='ar')
-                        fp = io.BytesIO()
-                        tts.write_to_fp(fp)
-                        st.audio(fp, format='audio/mp3')
-                except Exception as e:
-                    st.error(f"حدث خطأ في الاتصال: {e}")
-        else:
-            st.write("بانتظار سؤالك يا بطل! 😸")
+                    st.write(response.choices[0].message.content)
     else:
-        st.info("يرجى رفع الملف في تبويب الترجمة أولاً.")
+        st.info("يرجى رفع ملف PDF للبدء في غرفة الدراسة.")
