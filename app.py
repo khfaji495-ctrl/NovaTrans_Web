@@ -63,60 +63,28 @@ with tab1:
     st.divider()
     uploaded_file = st.file_uploader(" 😸 ارسل ملف الملزمه للسيد قط", type="pdf")
 
-    if uploaded_file is not None:
+  if uploaded_file is not None:
         st.session_state.uploaded_pdf = uploaded_file
-        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        
+        # --- التعديل هنا: إعادة ضبط المؤشر إلى البداية قبل القراءة ---
+        uploaded_file.seek(0) 
+        
+        # قراءة محتوى الملف مرة واحدة وتخزينه في متغير
+        pdf_bytes = uploaded_file.read()
+        
+        # فتح الملف باستخدام الـ bytes المخزنة
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
         total_pages = len(doc)
         
         c1, c2 = st.columns(2)
         with c1: start = st.number_input("من صفحة:", 1, total_pages, 1)
         with c2: end = st.number_input("إلى صفحة:", 1, total_pages, start)
-# استبدل الجزء الخاص بـ "if st.button("😸 ابدأ الترجمة مع سيد قط"):" بالكود التالي:
 
         if st.button("😸 ابدأ الترجمة مع سيد قط"):
             with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
-                # نفتح الملف باستخدام fitz للتحرير
-                doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-                
-                try:
-                    # تسجيل الخط - تأكد أن ملف font.ttf موجود في نفس المجلد
-                    # ملاحظة: fitz يحتاج مسار الخط أو اسم الخط إذا كان مثبتاً في النظام
-                    font_name = "arabic_font"
-                    doc.insert_font(fontfile="font.ttf", fontname=font_name)
-                except:
-                    st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود.")
-
-                for i in range(start - 1, end):
-                    page = doc.load_page(i)
-                    # استخراج النصوص مع إحداثياتها
-                    blocks = page.get_text("blocks")
-                    
-                    for b in blocks:
-                        text = b[4] # النص
-                        x0, y0, x1, y1 = b[:4] # الإحداثيات
-                        
-                        # منطق بسيط لاكتشاف المعادلات: إذا احتوى النص على رموز رياضية
-                        is_equation = any(char in text for char in ['=', '+', '-', '/', '*', '^', '\\'])
-                        
-                        if text.strip() and not is_equation:
-                            # ترجمة النص
-                            try:
-                                result = translator.translate_text(text, target_lang="AR")
-                                proper_arabic = prepare_arabic_text(result.text)
-                                
-                                # الرسم فوق الصفحة الأصلية (تحت النص الإنجليزي مباشرة)
-                                page.insert_text((x0, y1 + 5), proper_arabic, fontsize=10, fontname=font_name, color=(0, 0, 1))
-                            except:
-                                continue
-
-                # حفظ الملف الناتج في الذاكرة
-                output_buffer = io.BytesIO()
-                doc.save(output_buffer)
-                doc.close()
-                output_buffer.seek(0)
-                
-                st.success("😼سيد قط أتم المهمة بنجاح!")
-                st.download_button("😸 تحميل الملزمة من سيد قط", output_buffer, "SayedQatt_Translated.pdf", "application/pdf")
+                # نستخدم نفس الـ pdf_bytes المفتوح مسبقاً
+                # ... (بقية الكود الخاص بالترجمة الذي أرسلته لك في الرد السابق)
 
 with tab2:
     st.warning("⚠️ غرفة الدراسة الذكية تحت التطوير حالياً، انتظرنا قريباً! 😸")
