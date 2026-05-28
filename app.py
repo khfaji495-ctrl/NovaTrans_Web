@@ -8,12 +8,11 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 import base64
-import google.generativeai as genai
+from openai import OpenAI
 from gtts import gTTS
 
-# إعداد المساعد الذكي
-genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash')
+# إعداد المساعد الجديد (OpenAI)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
@@ -106,11 +105,6 @@ with tab1:
                 st.success("😼سيد قط أتم المهمة بنجاح!")
                 st.download_button("😸 تحميل الملزمة من سيد قط", pdf_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 
-from openai import OpenAI
-
-# إعداد المساعد (تأكد أن المفتاح في الـ Secrets باسم OPENAI_API_KEY)
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
 with tab2:
     if st.session_state.uploaded_pdf:
         st.write("---")
@@ -122,7 +116,7 @@ with tab2:
                 try:
                     # طلب الشرح من OpenAI
                     response = client.chat.completions.create(
-                        model="gpt-3.5-turbo", # أو يمكنك استخدام "gpt-4o"
+                        model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم العلمية بلهجة عراقية بسيطة ومفهومة."},
                             {"role": "user", "content": f"بناءً على الملزمة، اشرح لي هذا بلهجة عراقية: {user_q}"}
