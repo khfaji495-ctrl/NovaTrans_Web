@@ -173,7 +173,7 @@ if st.button("😺 ابدأ الترجمة مع سيد قط"):
                                 )
 
             output = io.BytesIO()
-            doc.save(output)
+            doc.save(output, garbage=4, deflate=True)
             output.seek(0)
 
             st.success("😺 تمت الترجمة بنجاح!")
