@@ -4,10 +4,7 @@
 
 try:
 
-    # -------------------------
-    # كتابة النص العربي داخل الـ PDF
-    # -------------------------
-
+    # كتابة النص
     page.draw_rect(
         fitz.Rect(x0, new_y - 2, x0 + width, new_y + 10),
         fill=(1, 1, 1),
@@ -23,10 +20,7 @@ try:
         overlay=True
     )
 
-    # -------------------------
     # حفظ الملف
-    # -------------------------
-
     temp_pdf = tempfile.NamedTemporaryFile(
         delete=False,
         suffix=".pdf"
@@ -37,10 +31,7 @@ try:
     doc.save(output_path)
     doc.close()
 
-    # -------------------------
     # زر التحميل
-    # -------------------------
-
     with open(output_path, "rb") as f:
 
         st.success("😼 تمت الترجمة بنجاح!")
@@ -55,9 +46,6 @@ try:
     # حذف الملف المؤقت
     os.remove(output_path)
 
-# -------------------------
-# معالجة الأخطاء
-# -------------------------
-
 except Exception as e:
-    st.error(f"خطأ: {e}")
+
+    st.error(f"خطأ: {str(e)}")
