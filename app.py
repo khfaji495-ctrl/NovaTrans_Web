@@ -76,47 +76,93 @@ if uploaded_file is not None:
     with c2:
         end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-    if st.button("😸 ابدأ الترجمة مع سيد قط"):
-        with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
-            pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer)
-            
-            try:
-                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-            except:
-                st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود.")
-            
-            y = 800 
+```python
+if st.button("😸 ابدأ الترجمة مع سيد قط"):
+
+    with st.spinner("🐈 سيد قط يترجم الملزمة الآن..."):
+
+        try:
+
+            # فتح ملف الـ PDF
+            doc = fitz.open(
+                stream=uploaded_file.read(),
+                filetype="pdf"
+            )
+
+            # المرور على الصفحات
             for i in range(start - 1, end):
-                text = doc.load_page(i).get_text()
-                lines = text.split('\n')
-                
-                for line in lines:
-                    if line.strip():
-                        if y < 100:
-                            c.showPage()
-                            y = 800
-                        
-                        c.setFont("Helvetica", 12)
-                        c.drawString(50, y, line[:80])
-                        y -= 20
-                        
-                        try:
-                            result = translator.translate_text(line, target_lang="AR")
-                            proper_arabic = prepare_arabic_text(result.text)
-                            
-                            c.setFont("Arabic", 12)
-                            c.drawString(50, y, proper_arabic)
-                            y -= 40
-                        except:
-                            continue
-            
-            c.save()
-            pdf_buffer.seek(0)
-            st.success("😼سيد قط أتم المهمة بنجاح!")
+
+                page = doc.load_page(i)
+
+                # استخراج النصوص مع الإحداثيات
+                blocks = page.get_text("blocks")
+
+                for block in blocks:
+
+                    x0, y0, x1, y1, text, *_ = block
+
+                    text = text.strip()
+
+                    if not text:
+                        continue
+
+                    try:
+
+                        # ترجمة النص
+                        result = translator.translate_text(
+                            text,
+                            target_lang="AR"
+                        )
+
+                        arabic_text = prepare_arabic_text(
+                            result.text
+                        )
+
+                        # رسم خلفية بيضاء فوق النص
+                        page.draw_rect(
+                            fitz.Rect(x0, y0, x1, y1 + 15),
+                            fill=(1, 1, 1),
+                            overlay=True
+                        )
+
+                        # إعادة النص الإنكليزي
+                        page.insert_text(
+                            (x0, y0 + 10),
+                            text,
+                            fontsize=8,
+                            color=(0, 0, 0),
+                            overlay=True
+                        )
+
+                        # كتابة الترجمة العربية تحته
+                        page.insert_text(
+                            (x0, y0 + 22),
+                            arabic_text,
+                            fontsize=8,
+                            color=(0, 0.5, 0),
+                            overlay=True
+                        )
+
+                    except Exception:
+                        continue
+
+            # حفظ الملف النهائي
+            pdf_bytes = doc.write()
+
+            doc.close()
+
+            st.success("😼 تمت الترجمة بنجاح!")
+
             st.download_button(
-                label="😸 تحميل الملزمة من سيد قط",
-                data=pdf_buffer,
+                label="😸 تحميل الملزمة",
+                data=pdf_bytes,
                 file_name="SayedQatt_Translated.pdf",
                 mime="application/pdf"
             )
+
+        except Exception as e:
+
+            st.error("حدث خطأ أثناء الترجمة")
+            st.write(e)
+```
+
