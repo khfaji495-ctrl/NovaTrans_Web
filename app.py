@@ -69,34 +69,9 @@ if uploaded_file is not None:
         for idx, i in enumerate(page_range):
             status_text.text(f"جاري معالجة الصفحة {idx + 1} من {total_pages}...")
             page = doc.load_page(i)
-            
-            # --- تحويل الصفحة الأصلية لصورة (خلفية) ---
-            # ضبط حجم الصفحة الجديدة ليكون مطابقاً للأصلية
             c.setPageSize((page.rect.width, page.rect.height))
             
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # جودة عالية
+            # 1. رسم الخلفية (الصورة الأصلية للصفحة)
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
             img_data = pix.tobytes("png")
-            img_reader = ImageReader(io.BytesIO(img_data))
-            
-            # رسم الصورة (الخلفية)
-            c.drawImage(img_reader, 0, 0, width=page.rect.width, height=page.rect.height)
-
-            # --- إضافة الترجمة فوق الصورة ---
-            text = page.get_text()
-            lines = text.split('\n')
-            
-            # الكتابة في نفس إحداثيات النص تقريباً
-            c.setFont("Arabic", 10)
-            for block in page.get_text("blocks"):
-                # block يحتوي على (x0, y0, x1, y1, text, ...)
-                x, y = block[0], block[1]
-                translated_text = translator.translate_text(block[4], target_lang="AR")
-                c.drawString(x, page.rect.height - y - 10, prepare_arabic_text(translated_text.text))
-            
-            c.showPage()
-            progress_bar.progress((idx + 1) / total_pages)
-            
-        c.save()
-        pdf_buffer.seek(0)
-        st.success("😼سيد قط أتم المهمة بنجاح!")
-        st.download_button("😸 تحميل الملزمة", data=pdf_buffer, file_name="SayedQatt_Translated.pdf", mime="application/pdf")
+            img_
