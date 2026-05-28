@@ -46,32 +46,7 @@ with tab1:
 
         if st.button("😸 ابدأ الترجمة مع سيد قط"):
             with st.spinner("🐈 سيد قط يترجم الآن.."):
-                for i in range(start - 1, end):
-                    page = doc.load_page(i)
-                    
-                    if os.path.exists("font.ttf"):
-                        page.insert_font(fontfile="font.ttf", fontname="ArabicFont")
-                    
-                    data = page.get_text("dict")
-                    for block in data.get("blocks", []):
-                        if "lines" in block:
-                            for line in block["lines"]:
-                                line_text = "".join([span["text"] for span in line["spans"]])
-                                rect = line["bbox"]
-                                y1 = rect[3]
-                                x0 = rect[0]
-                                
-                                is_equation = any(char in line_text for char in ['=', '+', '-', '/', '*', '^', '∫', '∑'])
-                                
-                                if line_text.strip() and not is_equation and len(line_text.strip()) > 3:
-                                    try:
-                                        translated = translator.translate_text(line_text, target_lang="AR").text
-                                        arabic = prepare_arabic_text(translated)
-                                        # إضافة خلفية بيضاء صغيرة للوضوح
-                                        page.draw_rect([x0, y1, x0 + 250, y1 + 12], color=(1, 1, 1), fill=(1, 1, 1))
-                                        page.insert_text((x0, y1 + 10), arabic, fontsize=8, fontname="ArabicFont", color=(0, 0, 0))
-                                    except:
-                                        continue
+               
                 
                 output = io.BytesIO()
                 doc.save(output)
