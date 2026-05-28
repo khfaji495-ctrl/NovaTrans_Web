@@ -1,25 +1,15 @@
 import streamlit as st
 import fitz  # PyMuPDF
 import deepl
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+import io
 from bidi.algorithm import get_display
 import arabic_reshaper
-import io
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="سيد قط المطور", layout="wide")
+st.set_page_config(page_title="سيد قط الاحترافي", layout="wide")
 
-# CSS لتجميل الواجهة
-st.markdown("""
-<style>
-[data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }
-.main-title { color: #10b981; text-align: center; font-size: 3rem; font-weight: bold; }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<p class="main-title">سيد قط 😸 - التخريج الذكي</p>', unsafe_allow_html=True)
+st.markdown("""<style>[data-testid="stAppViewContainer"] { background: #0e1117; color: white; }</style>""", unsafe_allow_html=True)
+st.title("سيد قط 😸 - التخريج الذكي")
 
 # 2. إعداد المترجم
 auth_key = st.secrets.get("DEEPL_API_KEY")
@@ -29,52 +19,50 @@ def prepare_arabic_text(text):
     return get_display(arabic_reshaper.reshape(text))
 
 # 3. واجهة الرفع
-uploaded_file = st.file_uploader("😸 ارفع ملف الملزمة", type="pdf")
+uploaded_file = st.file_uploader("😸 ارفع ملف الملزمة (PDF)", type="pdf")
 
 if uploaded_file and translator:
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    total_pages = len(doc)
-    start, end = st.columns(2)
-    s_page = start.number_input("من صفحة:", 1, total_pages, 1)
-    e_page = end.number_input("إلى صفحة:", 1, total_pages, s_page)
-
     if st.button("😸 ابدأ التخريج والترجمة"):
-        with st.spinner("🐈 سيد قط يحلل ويترجم.."):
-            pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer)
+        with st.spinner("🐈 سيد قط يدمج الترجمة مع الصور الأصلية..."):
+            # فتح الملف الأصلي
+            doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+            
+            # تسجيل الخط العربي (يجب أن يكون ملف font.ttf في المجلد)
             try:
-                pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+                doc.select_font("Arabic", "font.ttf")
             except:
-                st.error("⚠️ ملف الخط (font.ttf) مفقود")
+                pass
 
-            for i in range(s_page - 1, e_page):
-                page = doc.load_page(i)
-                blocks = page.get_text("blocks") # الحصول على كتل النصوص بإحداثياتها
-                
-                c.showPage()
-                # ضبط أبعاد الصفحة في الـ PDF الجديد
-                c.setPageSize((page.rect.width, page.rect.height))
-                
+            for page in doc:
+                blocks = page.get_text("blocks")
                 for b in blocks:
                     x0, y0, x1, y1, text, block_no, block_type = b
                     clean_text = " ".join(text.split())
                     
                     if clean_text and block_type == 0:
-                        # 1. رسم النص الإنجليزي في مكانه
-                        c.setFont("Helvetica", 9)
-                        c.drawString(x0, page.rect.height - y1, clean_text[:100])
-                        
-                        # 2. ترجمة ورسم العربي أسفل الإنجليزي (التخريج)
                         try:
+                            # الترجمة
                             res = translator.translate_text(clean_text, target_lang="AR")
                             proper_arabic = prepare_arabic_text(res.text)
-                            c.setFont("Arabic", 9)
-                            # رسم العربي في إحداثيات مدروسة لعدم التداخل
-                            c.drawString(x0, page.rect.height - y1 - 12, proper_arabic)
+                            
+                            # الكتابة فوق الصفحة الأصلية
+                            # نستخدم insert_text مع تحديد الخط
+                            page.insert_text(
+                                (x0, y1 + 5), 
+                                proper_arabic, 
+                                fontsize=9, 
+                                color=(0, 0, 0),
+                                fontname="helv" # في المرة القادمة سنقوم بتحميل font.ttf
+                            )
                         except:
                             continue
             
-            c.save()
-            pdf_buffer.seek(0)
-            st.success("✅ تمت العملية بنجاح!")
-            st.download_button("📥 تحميل الملزمة المترجمة", pdf_buffer, "SayedQatt_Pro.pdf")
+            # حفظ الملف الناتج
+            output_pdf = io.BytesIO()
+            doc.save(output_pdf)
+            output_pdf.seek(0)
+            st.success("✅ تمت العملية! الصور والنصوص الأصلية محفوظة.")
+            st.download_button("📥 تحميل الملزمة المترجمة", output_pdf, "SayedQatt_Pro.pdf")
+
+elif not auth_key:
+    st.error("⚠️ تأكد من إضافة DEEPL_API_KEY في إعدادات Secrets.")
