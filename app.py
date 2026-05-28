@@ -69,9 +69,9 @@ with tab1:
                                 if text.strip() and len(text.strip()) > 3:
                                     try:
                                         ar_text = prepare_arabic_text(translator.translate_text(text, target_lang="AR").text)
-                                        # التعديل هنا: رسم مستطيل أبيض لتغطية ما تحته ثم الكتابة فوقه
-                                        new_page.draw_rect([x0, y1, x0 + 200, y1 + 12], color=(1, 1, 1), fill=(1, 1, 1))
-                                        new_page.insert_text((x0, y1 + 10), ar_text, fontsize=9, fontname="ArabicFont")
+                                        # تم رفع الإحداثيات قليلاً للأعلى لتقليل الفراغات
+                                        new_page.draw_rect([x0, y1 - 2, x0 + 200, y1 + 10], color=(1, 1, 1), fill=(1, 1, 1))
+                                        new_page.insert_text((x0, y1 + 8), ar_text, fontsize=9, fontname="ArabicFont")
                                     except: continue
             
             output = io.BytesIO()
