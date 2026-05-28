@@ -135,12 +135,15 @@ def is_math_or_formula(text):
         for c in text
     )
 
+    # معادلات حقيقية
     if symbol_count >= 2 and letters_count < 5:
         return True
 
+    # إذا الأرقام أكثر من الأحرف
     if digits_count > letters_count and symbol_count > 0:
         return True
 
+    # معادلات قصيرة
     if len(text) < 15 and symbol_count > 0:
         return True
 
@@ -165,8 +168,10 @@ if uploaded_file is not None:
 
     try:
 
+        # قراءة الملف
         pdf_bytes = uploaded_file.getvalue()
 
+        # فتح الـ PDF
         doc = fitz.open(
             stream=pdf_bytes,
             filetype="pdf"
@@ -174,6 +179,7 @@ if uploaded_file is not None:
 
         total_pages = len(doc)
 
+        # اختيار الصفحات
         c1, c2 = st.columns(2)
 
         with c1:
@@ -205,9 +211,9 @@ if uploaded_file is not None:
             ):
 
                 # تحميل الخط العربي
-                page = doc[0]
+                first_page = doc[0]
 
-                page.insert_font(
+                first_page.insert_font(
                     fontname="Arabic",
                     fontfile="font.ttf"
                 )
@@ -236,6 +242,8 @@ if uploaded_file is not None:
                             x1 = 0
                             y1 = 0
 
+                            font_size = 10
+
                             for span in line["spans"]:
 
                                 line_text += span["text"] + " "
@@ -245,8 +253,11 @@ if uploaded_file is not None:
                                 x1 = span["bbox"][2]
                                 y1 = span["bbox"][3]
 
+                                font_size = span["size"]
+
                             line_text = line_text.strip()
 
+                            # تجاهل النصوص الفارغة
                             if not line_text:
                                 continue
 
@@ -261,7 +272,7 @@ if uploaded_file is not None:
                             try:
 
                                 # -----------------------------------
-                                # ترجمة النص
+                                # الترجمة
                                 # -----------------------------------
 
                                 result = translator.translate_text(
@@ -296,28 +307,31 @@ if uploaded_file is not None:
                                 # -----------------------------------
 
                                 page.insert_text(
-                                    (x0, y0 + 10),
+                                    (x0, y0 + 8),
                                     line_text,
-                                    fontsize=9,
+                                    fontsize=font_size,
                                     fontname="helv",
                                     color=(0, 0, 0),
                                     overlay=True
                                 )
 
                                 # -----------------------------------
-                                # كتابة الترجمة العربية فوقه
+                                # كتابة الترجمة العربية
                                 # -----------------------------------
 
-                                page.insert_text(
-                                    (x0, y0 - 2),
+                                shape = page.new_shape()
+
+                                shape.insert_text(
+                                    (x0, y0 - 6),
                                     arabic_text,
-                                    fontsize=11,
+                                    fontsize=font_size + 2,
                                     fontname="Arabic",
-                                    color=(1, 0, 0),
-                                    overlay=True
+                                    color=(1, 0, 0)
                                 )
 
-                            except:
+                                shape.commit()
+
+                            except Exception:
                                 continue
 
                 # -----------------------------------
