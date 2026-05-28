@@ -8,7 +8,7 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 
 # ======================================================
-# إعدادات الصفحة
+# إعداد الصفحة
 # ======================================================
 
 st.set_page_config(
@@ -17,15 +17,23 @@ st.set_page_config(
 )
 
 # ======================================================
-# CSS
+# تصميم CSS
 # ======================================================
 
 page_design = """
 <style>
 
-#MainMenu {visibility:hidden;}
-footer {visibility:hidden;}
-header {visibility:hidden;}
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+header {
+    visibility: hidden;
+}
 
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
@@ -42,6 +50,7 @@ header {visibility:hidden;}
     color:#cbd5e1;
     text-align:center;
     font-size:1.2rem;
+    margin-bottom:30px;
 }
 
 </style>
@@ -64,7 +73,7 @@ st.markdown(
 )
 
 # ======================================================
-# DeepL
+# DeepL API
 # ======================================================
 
 try:
@@ -73,9 +82,9 @@ try:
 
     translator = deepl.Translator(auth_key)
 
-except:
+except Exception:
 
-    st.error("أضف DEEPL_API_KEY داخل secrets")
+    st.error("⚠️ أضف مفتاح DeepL داخل Secrets")
 
     st.stop()
 
@@ -85,9 +94,9 @@ except:
 
 def prepare_arabic(text):
 
-    reshaped = arabic_reshaper.reshape(text)
+    reshaped_text = arabic_reshaper.reshape(text)
 
-    bidi_text = get_display(reshaped)
+    bidi_text = get_display(reshaped_text)
 
     return bidi_text
 
@@ -101,10 +110,12 @@ uploaded_file = st.file_uploader(
 )
 
 # ======================================================
-# الترجمة
+# إذا تم رفع ملف
 # ======================================================
 
 if uploaded_file is not None:
+
+    # فتح الـ PDF
 
     doc = fitz.open(
         stream=uploaded_file.read(),
@@ -113,35 +124,41 @@ if uploaded_file is not None:
 
     total_pages = len(doc)
 
+    # اختيار الصفحات
+
     c1, c2 = st.columns(2)
 
     with c1:
 
         start_page = st.number_input(
             "من صفحة",
-            1,
-            total_pages,
-            1
+            min_value=1,
+            max_value=total_pages,
+            value=1
         )
 
     with c2:
 
         end_page = st.number_input(
             "إلى صفحة",
-            1,
-            total_pages,
-            start_page
+            min_value=1,
+            max_value=total_pages,
+            value=total_pages
         )
 
     # ==================================================
-    # بدء الترجمة
+    # زر الترجمة
     # ==================================================
 
     if st.button("😸 ابدأ الترجمة"):
 
-        with st.spinner("🐈 سيد قط يعمل الآن..."):
+        with st.spinner("🐈 سيد قط يترجم الآن..."):
 
             try:
+
+                # ======================================
+                # الصفحات
+                # ======================================
 
                 for page_num in range(
                     start_page - 1,
@@ -150,7 +167,12 @@ if uploaded_file is not None:
 
                     page = doc.load_page(page_num)
 
+                    # استخراج البلوكات
                     blocks = page.get_text("blocks")
+
+                    # ==================================
+                    # كل بلوك
+                    # ==================================
 
                     for block in blocks:
 
@@ -158,30 +180,14 @@ if uploaded_file is not None:
 
                         text = text.strip()
 
+                        # تجاهل النصوص القصيرة
                         if len(text) < 3:
                             continue
 
-                        # ==================================
-                        # تنظيف النص
-                        # ==================================
-
+                        # تنظيف
                         clean_text = text.replace("\n", " ")
 
                         # ==================================
-                        # ترجمة
+                        # الترجمة
                         # ==================================
-
-                        try:
-
-                            result = translator.translate_text(
-                                clean_text,
-                                target_lang="AR"
-                            )
-
-                            arabic_text = prepare_arabic(
-                                result.text
-                            )
-
-                        except:
-
-                            continue
+                    
