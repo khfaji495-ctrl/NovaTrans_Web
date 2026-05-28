@@ -1,5 +1,5 @@
 import streamlit as st
-import fitz
+import fitz  # PyMuPDF
 import deepl
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -9,114 +9,72 @@ import arabic_reshaper
 import io
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="سيد قط ", layout="wide")
+st.set_page_config(page_title="سيد قط المطور", layout="wide")
 
-# كود CSS: إخفاء القائمة + الخلفية + التنسيق
-page_design = """
+# CSS لتجميل الواجهة
+st.markdown("""
 <style>
-/* إخفاء قائمة Streamlit وأدوات المطورين */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-
-[data-testid="stAppViewContainer"] {
-    background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
-}
-[data-testid="stHeader"] {
-    background-color: rgba(0,0,0,0);
-}
-.main-title {
-    color: #10b981;
-    text-align: center;
-    font-size: 3.5rem;
-    font-weight: bold;
-    margin-top: -50px;
-}
-.sub-title {
-    color: #cbd5e1;
-    text-align: center;
-    font-size: 1.2rem;
-    margin-bottom: 30px;
-}
+[data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }
+.main-title { color: #10b981; text-align: center; font-size: 3rem; font-weight: bold; }
 </style>
-"""
-st.markdown(page_design, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# 2. عرض الـ GIF والعنوان
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    st.image("cat_pixel.gif", use_container_width=True)
+st.markdown('<p class="main-title">سيد قط 😸 - التخريج الذكي</p>', unsafe_allow_html=True)
 
-st.markdown('<p class="main-title">سيد قط </p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
-
-# 3. إعداد مترجم DeepL
-try:
-    auth_key = st.secrets["DEEPL_API_KEY"]
-    translator = deepl.Translator(auth_key)
-except Exception as e:
-    st.error("⚠️ خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets باسم DEEPL_API_KEY")
-    st.stop()
+# 2. إعداد المترجم
+auth_key = st.secrets.get("DEEPL_API_KEY")
+translator = deepl.Translator(auth_key) if auth_key else None
 
 def prepare_arabic_text(text):
-    reshaped_text = arabic_reshaper.reshape(text)
-    return get_display(reshaped_text)
+    return get_display(arabic_reshaper.reshape(text))
 
-# 4. واجهة رفع الملفات
-st.divider()
-uploaded_file = st.file_uploader(" 😸 ارسل ملف الملزمه للسيد قط", type="pdf")
+# 3. واجهة الرفع
+uploaded_file = st.file_uploader("😸 ارفع ملف الملزمة", type="pdf")
 
-if uploaded_file is not None:
+if uploaded_file and translator:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     total_pages = len(doc)
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        start = st.number_input("من صفحة:", 1, total_pages, 1)
-    with c2:
-        end = st.number_input("إلى صفحة:", 1, total_pages, start)
+    start, end = st.columns(2)
+    s_page = start.number_input("من صفحة:", 1, total_pages, 1)
+    e_page = end.number_input("إلى صفحة:", 1, total_pages, s_page)
 
-    if st.button("😸 ابدأ الترجمة مع سيد قط"):
-        with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
+    if st.button("😸 ابدأ التخريج والترجمة"):
+        with st.spinner("🐈 سيد قط يحلل ويترجم.."):
             pdf_buffer = io.BytesIO()
             c = canvas.Canvas(pdf_buffer)
-            
             try:
                 pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
             except:
-                st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود.")
-            
-            y = 800 
-            for i in range(start - 1, end):
-                text = doc.load_page(i).get_text()
-                lines = text.split('\n')
+                st.error("⚠️ ملف الخط (font.ttf) مفقود")
+
+            for i in range(s_page - 1, e_page):
+                page = doc.load_page(i)
+                blocks = page.get_text("blocks") # الحصول على كتل النصوص بإحداثياتها
                 
-                for line in lines:
-                    if line.strip():
-                        if y < 100:
-                            c.showPage()
-                            y = 800
+                c.showPage()
+                # ضبط أبعاد الصفحة في الـ PDF الجديد
+                c.setPageSize((page.rect.width, page.rect.height))
+                
+                for b in blocks:
+                    x0, y0, x1, y1, text, block_no, block_type = b
+                    clean_text = " ".join(text.split())
+                    
+                    if clean_text and block_type == 0:
+                        # 1. رسم النص الإنجليزي في مكانه
+                        c.setFont("Helvetica", 9)
+                        c.drawString(x0, page.rect.height - y1, clean_text[:100])
                         
-                        c.setFont("Helvetica", 12)
-                        c.drawString(50, y, line[:80])
-                        y -= 20
-                        
+                        # 2. ترجمة ورسم العربي أسفل الإنجليزي (التخريج)
                         try:
-                            result = translator.translate_text(line, target_lang="AR")
-                            proper_arabic = prepare_arabic_text(result.text)
-                            
-                            c.setFont("Arabic", 12)
-                            c.drawString(50, y, proper_arabic)
-                            y -= 40
+                            res = translator.translate_text(clean_text, target_lang="AR")
+                            proper_arabic = prepare_arabic_text(res.text)
+                            c.setFont("Arabic", 9)
+                            # رسم العربي في إحداثيات مدروسة لعدم التداخل
+                            c.drawString(x0, page.rect.height - y1 - 12, proper_arabic)
                         except:
                             continue
             
             c.save()
             pdf_buffer.seek(0)
-            st.success("😼سيد قط أتم المهمة بنجاح!")
-            st.download_button(
-                label="😸 تحميل الملزمة من سيد قط",
-                data=pdf_buffer,
-                file_name="SayedQatt_Translated.pdf",
-                mime="application/pdf"
-            )
+            st.success("✅ تمت العملية بنجاح!")
+            st.download_button("📥 تحميل الملزمة المترجمة", pdf_buffer, "SayedQatt_Pro.pdf")
