@@ -39,7 +39,7 @@ def prepare_arabic_text(text):
     return get_display(arabic_reshaper.reshape(text))
 
 # 4. التبويبات
-tab1, tab2 = st.tabs(["😸 ترجمة السيد قط", "👨‍🏫 غرفة الدراسة"])
+tab1, tab2 = st.tabs(["   ترجمة السيد قط   ", "👨‍🏫 غرفة الدراسة"])
 
 with tab1:
     c1, c2 = st.columns([0.1, 1])
