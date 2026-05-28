@@ -42,7 +42,7 @@ def prepare_arabic_text(text):
 tab1, tab2 = st.tabs(["😸 ترجمة السيد قط", "👨‍🏫 غرفة الدراسة"])
 
 with tab1:
-    uploaded_file = st.file_uploader("ارفع ملف PDF", type="pdf")
+    uploaded_file = st.file_uploader("ارسل ملفك الى سيد قط", type="pdf")
     if uploaded_file is not None:
         uploaded_file.seek(0)
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
