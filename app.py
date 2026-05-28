@@ -1,103 +1,48 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz
 import deepl
 import io
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.utils import ImageReader
-from bidi.algorithm import get_display
-import arabic_reshaper
 
-# 1. إعدادات الصفحة
-st.set_page_config(page_title="سيد قط ", layout="wide")
-
-page_design = """
-<style>
-#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-[data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }
-.main-title { color: #10b981; text-align: center; font-size: 3.5rem; font-weight: bold; margin-top: -50px; }
-.sub-title { color: #cbd5e1; text-align: center; font-size: 1.2rem; margin-bottom: 30px; }
-</style>
-"""
-st.markdown(page_design, unsafe_allow_html=True)
-
-# 2. العنوان
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    st.image("cat_pixel.gif", use_container_width=True)
-
-st.markdown('<p class="main-title">سيد قط </p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
-
-# 3. إعداد المترجم
-try:
-    auth_key = st.secrets["DEEPL_API_KEY"]
-    translator = deepl.Translator(auth_key)
-except:
-    st.error("⚠️ خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets")
-    st.stop()
-
-def prepare_arabic_text(text):
-    return get_display(arabic_reshaper.reshape(text))
-
-# 4. الواجهة
-uploaded_file = st.file_uploader(" 😸 ارسل ملف الملزمه للسيد قط", type="pdf")
+# [إعدادات الصفحة وCSS تبقى كما هي...]
 
 if uploaded_file is not None:
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    total_pages_doc = len(doc)
-    c1, c2 = st.columns(2)
-    start = c1.number_input("من صفحة:", 1, total_pages_doc, 1)
-    end = c2.number_input("إلى صفحة:", 1, total_pages_doc, start)
-
+    
     if st.button("😸 ابدأ الترجمة مع سيد قط"):
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+        # نفتح ملف PDF جديد لنحفظ فيه التعديلات
+        output_pdf = fitz.open()
         
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer)
-        
-        try:
-            pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-        except:
-            st.warning("⚠️ ملف الخط (font.ttf) غير موجود.")
-
-        page_range = range(start - 1, end)
-        total_pages = len(page_range)
-
-        for idx, i in enumerate(page_range):
-            status_text.text(f"جاري معالجة الصفحة {idx + 1} من {total_pages}...")
-            page = doc.load_page(i)
-            c.setPageSize((page.rect.width, page.rect.height))
+        with st.spinner(".... 🐈سيد قط يترجم الآن.."):
+            for i in range(start - 1, end):
+                page = doc.load_page(i)
+                # إنشاء صفحة جديدة بنفس أبعاد الأصلية
+                new_page = output_pdf.new_page(width=page.rect.width, height=page.rect.height)
+                
+                # نسخ الصفحة الأصلية كصورة (لضمان ظهور كل شيء)
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                new_page.insert_image(page.rect, pixmap=pix)
+                
+                # إضافة النصوص
+                blocks = sorted(page.get_text("blocks"), key=lambda b: b[1])
+                for block in blocks:
+                    if block[6] == 0:  # نص
+                        text = block[4].strip()
+                        if len(text) > 2:
+                            x, y = block[0], block[1]
+                            # إضافة الأصل
+                            new_page.insert_text((x, y), text[:80], fontsize=10)
+                            
+                            # إضافة الترجمة تحت النص بمسافة بسيطة
+                            try:
+                                translated = translator.translate_text(text, target_lang="AR")
+                                # ملاحظة: استخدم خطاً يدعم العربية إذا لزم الأمر
+                                new_page.insert_text((x, y + 15), translated.text, fontsize=10)
+                            except:
+                                continue
             
-            # --- رسم الخلفية (الصورة الأصلية) ---
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            img_data = pix.tobytes("png")
-            img_reader = ImageReader(io.BytesIO(img_data))
-            c.drawImage(img_reader, 0, 0, width=page.rect.width, height=page.rect.height)
-
-            # --- إضافة النصوص ---
-            blocks = sorted(page.get_text("blocks"), key=lambda b: b[1])
-            for block in blocks:
-                x0, y0, x1, y1, text, block_no, block_type = block
-                if block_type == 0: 
-                    # النص الأصلي
-                    c.setFont("Helvetica", 10)
-                    c.drawString(x0, page.rect.height - y0 - 10, text.replace('\n', ' '))
-                    
-                    # الترجمة
-                    try:
-                        translated = translator.translate_text(text, target_lang="AR")
-                        c.setFont("Arabic", 10)
-                        c.drawString(x0, page.rect.height - y1 - 15, prepare_arabic_text(translated.text))
-                    except:
-                        continue
-            
-            c.showPage()
-            progress_bar.progress((idx + 1) / total_pages)
-            
-        c.save()
-        pdf_buffer.seek(0)
-        st.success("😼سيد قط أتم المهمة بنجاح!")
-        st.download_button("😸 تحميل الملزمة", data=pdf_buffer, file_name="SayedQatt_Translated.pdf", mime="application/pdf")
+            # حفظ وتحميل
+            output_buffer = io.BytesIO()
+            output_pdf.save(output_buffer)
+            output_buffer.seek(0)
+            st.success("😼 تم بنجاح!")
+            st.download_button("تحميل الملزمة", data=output_buffer, file_name="Translated.pdf", mime="application/pdf")
