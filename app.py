@@ -39,7 +39,6 @@ header {visibility: hidden;}
     margin-bottom: 30px;
 }
 </style>
-"""
 st.markdown(page_design, unsafe_allow_html=True)
 
 # 2. عرض الـ GIF والعنوان
@@ -76,7 +75,7 @@ if uploaded_file is not None:
     with c2:
         end = st.number_input("إلى صفحة:", 1, total_pages, start)
 
-```python
+
 if st.button("😸 ابدأ الترجمة مع سيد قط"):
 
     with st.spinner("🐈 سيد قط يترجم الملزمة الآن..."):
