@@ -190,4 +190,103 @@ if uploaded_file is not None:
                         # ==================================
                         # الترجمة
                         # ==================================
-                    
+              try:
+
+                            result = translator.translate_text(
+                                clean_text,
+                                target_lang="AR"
+                            )
+
+                            arabic_text = prepare_arabic(
+                                result.text
+                            )
+
+                        except Exception:
+
+                            continue
+
+                        # ==================================
+                        # مكان الترجمة
+                        # ==================================
+
+                        new_y = y0 - 10
+
+                        # ==================================
+                        # خلفية خفيفة
+                        # ==================================
+
+                        rect = fitz.Rect(
+                            x0,
+                            new_y - 2,
+                            x1,
+                            new_y + 12
+                        )
+
+                        page.draw_rect(
+                            rect,
+                            color=(1, 1, 1),
+                            fill=(1, 1, 1),
+                            overlay=True
+                        )
+
+                        # ==================================
+                        # كتابة الترجمة
+                        # ==================================
+
+                        page.insert_text(
+
+                            (x0, new_y),
+
+                            arabic_text,
+
+                            fontsize=8,
+
+                            fontname="helv",
+
+                            color=(0, 0.6, 0),
+
+                            overlay=True
+
+                        )
+
+                # ======================================
+                # حفظ الملف
+                # ======================================
+
+                temp_pdf = tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=".pdf"
+                )
+
+                output_path = temp_pdf.name
+
+                doc.save(output_path)
+
+                doc.close()
+
+                # ======================================
+                # تحميل الملف
+                # ======================================
+
+                with open(output_path, "rb") as f:
+
+                    st.success("😼 تمت الترجمة بنجاح!")
+
+                    st.download_button(
+
+                        label="😸 تحميل الملزمة المترجمة",
+
+                        data=f,
+
+                        file_name="SayedQatt_Translated.pdf",
+
+                        mime="application/pdf"
+
+                    )
+
+                # حذف الملف المؤقت
+                os.remove(output_path)
+
+            except Exception as e:
+
+                st.error(f"حدث خطأ: {e}")
