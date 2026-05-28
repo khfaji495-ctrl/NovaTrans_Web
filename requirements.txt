@@ -5,4 +5,4 @@ reportlab
 arabic-reshaper
 python-bidi
 gtts
-openai
+groq
