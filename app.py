@@ -110,13 +110,21 @@ with tab2:
     if st.session_state.uploaded_pdf:
         st.write("---")
         user_q = st.text_input("اسأل سيد قط عن الملزمة:")
-        if user_q:
-            response = model.generate_content(f"اشرح لي بلهجة عراقية: {user_q}")
-            st.write(response.text)
-            if st.button("🔊 اسمع الشرح"):
-                tts = gTTS(text=response.text, lang='ar')
-                fp = io.BytesIO()
-                tts.write_to_fp(fp)
-                st.audio(fp, format='audio/mp3')
+        
+        # التعديل هنا: أضفنا شرطاً للتأكد أن المستخدم كتب شيئاً
+        if user_q and user_q.strip() != "":
+            with st.spinner("سيد قط يفكر..."):
+                try:
+                    response = model.generate_content(f"اشرح لي بلهجة عراقية: {user_q}")
+                    st.write(response.text)
+                    if st.button("🔊 اسمع الشرح"):
+                        tts = gTTS(text=response.text, lang='ar')
+                        fp = io.BytesIO()
+                        tts.write_to_fp(fp)
+                        st.audio(fp, format='audio/mp3')
+                except Exception as e:
+                    st.error("حدث خطأ أثناء التواصل مع سيد قط، تأكد من المفتاح!")
+        else:
+            st.write("بانتظار سؤالك يا بطل! 😸")
     else:
         st.info("يرجى رفع الملف في تبويب الترجمة أولاً.")
