@@ -66,7 +66,14 @@ with tab1:
                     st.error("⚠️ ملف الخط (font.ttf) غير موجود في المجلد!")
                 else:
                     # تسجيل الخط
-                    doc.insert_font(fontfile=font_path, fontname="ArabicFont")
+                   # داخل حلقة for i in range(start - 1, end):
+                page = doc.load_page(i)
+
+# قم بتسجيل الخط هنا لكل صفحة بشكل صحيح
+                        page.insert_font(fontfile=font_path, fontname="ArabicFont")
+
+                            blocks = page.get_text("blocks")
+# ... باقي كود المعالجة كما هو
 
                     for i in range(start - 1, end):
                         page = doc.load_page(i)
