@@ -95,11 +95,5 @@ with tab1:
 
 with tab2:
     st.header("👨‍🏫 غرفة الدراسة الذكية")
-    col_eng, col_med = st.columns(2)
-    with col_eng:
-        st.image("engineering.gif", width=80)
-        st.write("### القسم الهندسي")
-    with col_med:
-        st.image("medical.gif", width=80)
-        st.write("### القسم الطبي")
+    
     st.warning("⚠️ هذه الميزة تحت التطوير حالياً، انتظرنا قريباً! 😸")
