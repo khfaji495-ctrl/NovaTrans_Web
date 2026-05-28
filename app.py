@@ -44,7 +44,7 @@ if 'uploaded_pdf' not in st.session_state:
     st.session_state.uploaded_pdf = None
 
 # التبويبات الجديدة
-tab1, tab2 = st.tabs(["😸 الترجمة", "👨‍🏫 غرفة الدراسة"])
+tab1, tab2 = st.tabs(["😸  الترجمة ", "👨‍🏫 غرفة الدراسة"]) 
 
 with tab1:
     # 3. إعداد مترجم DeepL
@@ -106,41 +106,4 @@ with tab1:
                 st.download_button("😸 تحميل الملزمة من سيد قط", pdf_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 
 with tab2:
-    uploaded_file_study = st.file_uploader("📥 ارفع الملزمة هنا لغرفة الدراسة", type="pdf", key="study_pdf")
-    
-    if uploaded_file_study:
-        # قراءة النص
-        doc = fitz.open(stream=uploaded_file_study.read(), filetype="pdf")
-        full_text = ""
-        for page in doc:
-            full_text += page.get_text()
-            
-        sub_tab1, sub_tab2 = st.tabs(["📄 محتوى الملزمة", "💬 مناقشة المساعد"])
-        
-        with sub_tab1:
-            st.text_area("نص الملزمة المستخرج:", value=full_text[:10000], height=400)
-            
-        with sub_tab2:
-            user_q = st.text_input("سيد قط، اشرح لي هذه النقطة:")
-            if user_q:
-                with st.spinner("سيد قط يحلل الملزمة..."):
-                    try:
-                        response = client.chat.completions.create(
-                            model="llama-3.1-8b-instant",
-                            messages=[
-                                {"role": "system", "content": "أنت مساعد ذكي عراقي أصيل اسمه سيد قط. تحكي بلهجة أهل العراق (مثل: شونك، هسة، تدلل، عيوني). شرحك علمي لكن بلهجة عراقية بسيطة ومفهومة. لا تستخدم اللهجة المصرية أبداً."},
-                                {"role": "user", "content": f"نص الملزمة: {full_text[:5000]} \n\n سؤالك: {user_q}"}
-                            ]
-                        )
-                        answer = response.choices[0].message.content
-                        st.markdown(f"**سيد قط:** {answer}")
-                        
-                        # تفعيل الصوت تلقائياً للشرح العراقي
-                        st.subheader("🔊 استمع للشرح بالعراقي:")
-                        tts = gTTS(text=answer, lang='ar')
-                        fp = io.BytesIO()
-                        tts.write_to_fp(fp)
-                        st.audio(fp, format='audio/mp3')
-                        
-                    except Exception as e:
-                        st.error(f"خطأ: {e}")
+    st.warning("⚠️ غرفة الدراسة الذكية تحت التطوير حالياً، انتظرنا قريباً! 😸")
