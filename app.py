@@ -65,12 +65,12 @@ with tab1:
                         if "lines" in block:
                             for line in block["lines"]:
                                 text = "".join([s["text"] for s in line["spans"]])
-                                x0, y1 = line["bbox"][0], line["bbox"][3]
+                                x0, y0 = line["bbox"][0], line["bbox"][1]
                                 if text.strip() and len(text.strip()) > 3:
                                     try:
                                         ar_text = prepare_arabic_text(translator.translate_text(text, target_lang="AR").text)
-                                        # إزالة المستطيل الأبيض والترجمة تحت النص بإزاحة بسيطة (y1 + 1)
-                                        new_page.insert_text((x0, y1 + 1), ar_text, fontsize=8, fontname="ArabicFont")
+                                        # إضافة الترجمة فوق السطر مباشرة بدون مستطيل
+                                        new_page.insert_text((x0, y0 - 2), ar_text, fontsize=8, fontname="ArabicFont")
                                     except: continue
             
             output = io.BytesIO()
