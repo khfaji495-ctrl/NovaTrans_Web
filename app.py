@@ -44,7 +44,7 @@ tab1, tab2 = st.tabs(["   ترجمة السيد قط   ", "👨‍🏫 غرفة 
 with tab1:
     c1, c2 = st.columns([0.1, 1])
     with c1:
-        st.image("catii-pixel.gif") # استدعاء مباشر بدون تحديد width لتجنب الخطأ
+        st.image("catiii-pixel.gif") # استدعاء مباشر بدون تحديد width لتجنب الخطأ
     with c2:
         st.subheader("ترجمة السيد قط")
         
