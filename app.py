@@ -4,7 +4,7 @@
 
 try:
 
-    # كتابة النص
+    # كتابة النص داخل الـ PDF
     page.draw_rect(
         fitz.Rect(x0, new_y - 2, x0 + width, new_y + 10),
         fill=(1, 1, 1),
@@ -47,5 +47,7 @@ try:
     os.remove(output_path)
 
 except Exception as e:
+
+    st.error(f"خطأ: {str(e)}")
 
     st.error(f"خطأ: {str(e)}")
