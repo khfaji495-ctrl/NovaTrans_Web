@@ -272,4 +272,3 @@ if uploaded_file is not None:
         st.error("حدث خطأ أثناء معالجة الملف")
 
         st.write(e)
-```
