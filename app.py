@@ -23,10 +23,12 @@ st.markdown(page_design, unsafe_allow_html=True)
 # دالة لعرض الـ GIF بشكل مضمون
 def display_gif(file_path, width=None):
     if os.path.exists(file_path):
-        file_ = open(file_path, "rb")
-        contents = file_.read()
-        file_.close()
-        st.image(contents, width=width)
+        with open(file_path, "rb") as file_:
+            contents = file_.read()
+        if width:
+            st.image(contents, width=width)
+        else:
+            st.image(contents)
     else:
         st.write(f"الملف {file_path} غير موجود")
 
