@@ -1,6 +1,5 @@
 import streamlit as st
 import fitz
-import deepl
 import io
 import base64
 import google.generativeai as genai
@@ -11,66 +10,50 @@ from reportlab.pdfbase.ttfonts import TTFont
 from bidi.algorithm import get_display
 import arabic_reshaper
 
-# إعداد المساعد والترجمة
+# إعدادات المساعد
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 model = genai.GenerativeModel('gemini-1.5-flash')
-translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 
-st.set_page_config(layout="wide", page_title="سيد قط الاحترافي")
+st.set_page_config(layout="wide", page_title="سيد قط")
 
-# دالة تجهيز الخط العربي
-def register_arabic_font():
-    try:
-        pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-    except:
-        st.error("⚠️ خطأ: تأكد من وجود ملف font.ttf في مجلد المشروع!")
-
-# دالة تجهيز النص العربي
-def prepare_arabic(text):
-    return get_display(arabic_reshaper.reshape(text))
-
-# عرض الـ PDF
-def display_pdf(file):
-    base64_pdf = base64.b64encode(file.getvalue()).decode('utf-8')
-    st.markdown(f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
+# تخزين الملف في الـ session_state لمنع اختفائه
+if 'uploaded_pdf' not in st.session_state:
+    st.session_state.uploaded_pdf = None
 
 st.title("سيد قط 😸")
 uploaded_file = st.file_uploader("ارفع الملزمة (PDF):", type="pdf")
 
+if uploaded_file:
+    st.session_state.uploaded_pdf = uploaded_file
+
 tab1, tab2 = st.tabs(["😸 صفحة الترجمة والحفظ", "👨‍🏫 غرفة الدراسة الذكية"])
 
-# --- تبويب الترجمة والحفظ ---
+# --- تبويب الترجمة ---
 with tab1:
-    if uploaded_file:
-        if st.button("بدء الترجمة وحفظ الملف"):
-            with st.spinner("سيد قط يكتب الخط العربي الجميل..."):
-                register_arabic_font() # تسجيل الخط قبل البدء
-                doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-                pdf_buffer = io.BytesIO()
-                c = canvas.Canvas(pdf_buffer)
-                
-                # [هنا تضع منطقك القديم في الرسم باستخدام c.setFont("Arabic", 12)]
-                
-                c.save()
-                pdf_buffer.seek(0)
-                st.download_button("📥 تحميل الملزمة المترجمة", pdf_buffer, "SayedQatt_Final.pdf")
-                st.success("تم الحفظ بنجاح! 😸")
+    if st.session_state.uploaded_pdf:
+        if st.button("ابدأ الترجمة"):
+            # هنا يجب وضع كود الرسم (canvas) الخاص بك بدقة
+            st.success("جاري المعالجة...")
+            # أضف هنا كود الترجمة الذي كنت تستخدمه (مع تسجيل الخط العربي)
+    else:
+        st.warning("يرجى رفع الملف أولاً!")
 
 # --- تبويب غرفة الدراسة ---
 with tab2:
-    if uploaded_file:
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            display_pdf(uploaded_file)
-        with col2:
-            user_q = st.text_input("اسأل سيد قط عن أي فقرة:")
-            if user_q:
-                response = model.generate_content(f"اشرح لي هذا بلهجة عراقية: {user_q}")
-                st.write(response.text)
-                if st.button("🔊 اسمع الشرح"):
-                    tts = gTTS(text=response.text, lang='ar')
-                    fp = io.BytesIO()
-                    tts.write_to_fp(fp)
-                    st.audio(fp, format='audio/mp3')
+    if st.session_state.uploaded_pdf:
+        # عرض الـ PDF
+        pdf_data = st.session_state.uploaded_pdf.getvalue()
+        base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
+        st.markdown(f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="500"></iframe>', unsafe_allow_html=True)
+        
+        user_q = st.text_input("اسأل سيد قط:")
+        if user_q:
+            response = model.generate_content(f"اشرح لي بلهجة عراقية: {user_q}")
+            st.write(response.text)
+            if st.button("🔊 اسمع الشرح"):
+                tts = gTTS(text=response.text, lang='ar')
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                st.audio(fp, format='audio/mp3')
     else:
         st.info("يرجى رفع ملف في الأعلى.")
