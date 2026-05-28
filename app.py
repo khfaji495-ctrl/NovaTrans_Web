@@ -102,15 +102,13 @@ def prepare_arabic_text(text):
     return get_display(reshaped_text)
 
 # -----------------------------------
-# التحقق من المعادلات
+# كشف المعادلات الرياضية
 # -----------------------------------
 
 def is_math_or_formula(text):
 
     math_symbols = [
         "=",
-        "+",
-        "-",
         "÷",
         "×",
         "∫",
@@ -120,22 +118,34 @@ def is_math_or_formula(text):
         "∞",
         "≈",
         "≠",
-        "<",
-        ">",
-        "^",
-        "{",
-        "}",
-        "[",
-        "]"
+        "^"
     ]
 
-    # يحتوي أرقام ورموز كثيرة
     symbol_count = sum(
-        symbol in text
+        text.count(symbol)
         for symbol in math_symbols
     )
 
-    if symbol_count >= 1:
+    letters_count = sum(
+        c.isalpha()
+        for c in text
+    )
+
+    digits_count = sum(
+        c.isdigit()
+        for c in text
+    )
+
+    # معادلات فعلية
+    if symbol_count >= 2 and letters_count < 5:
+        return True
+
+    # إذا الأرقام أكثر من الأحرف
+    if digits_count > letters_count and symbol_count > 0:
+        return True
+
+    # معادلات قصيرة
+    if len(text) < 15 and symbol_count > 0:
         return True
 
     return False
@@ -209,7 +219,10 @@ if uploaded_file is not None:
                     fontfile="font.ttf"
                 )
 
+                # -----------------------------------
                 # المرور على الصفحات
+                # -----------------------------------
+
                 for i in range(start - 1, end):
 
                     page = doc.load_page(i)
@@ -236,6 +249,7 @@ if uploaded_file is not None:
                                 line_text += span["text"] + " "
 
                                 x0 = span["bbox"][0]
+
                                 y0 = span["bbox"][1]
 
                             line_text = line_text.strip()
@@ -254,7 +268,10 @@ if uploaded_file is not None:
 
                             try:
 
+                                # -----------------------------------
                                 # الترجمة
+                                # -----------------------------------
+
                                 result = translator.translate_text(
                                     line_text,
                                     target_lang="AR"
@@ -264,26 +281,35 @@ if uploaded_file is not None:
                                     result.text
                                 )
 
-                                # موضع النص العربي
-                                arabic_y = y0 - 10
+                                # -----------------------------------
+                                # مكان الترجمة
+                                # -----------------------------------
 
+                                arabic_y = y0 - 16
+
+                                # -----------------------------------
                                 # خلفية بيضاء
+                                # -----------------------------------
+
                                 page.draw_rect(
                                     fitz.Rect(
-                                        x0 - 2,
-                                        arabic_y - 2,
-                                        x0 + 350,
-                                        arabic_y + 12
+                                        x0 - 3,
+                                        arabic_y - 3,
+                                        x0 + 450,
+                                        arabic_y + 18
                                     ),
                                     fill=(1, 1, 1),
                                     overlay=True
                                 )
 
+                                # -----------------------------------
                                 # كتابة الترجمة
+                                # -----------------------------------
+
                                 page.insert_text(
-                                    (x0, arabic_y + 8),
+                                    (x0, arabic_y + 10),
                                     arabic_text,
-                                    fontsize=8,
+                                    fontsize=11,
                                     fontname="Arabic",
                                     color=(1, 0, 0),
                                     overlay=True
