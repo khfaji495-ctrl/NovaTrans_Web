@@ -14,42 +14,41 @@ from gtts import gTTS
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 model = genai.GenerativeModel('gemini-pro')
 
-# إعدادات الصفحة
-st.set_page_config(page_title="سيد قط", layout="wide")
+st.set_page_config(page_title="سيد قط المطور", layout="wide")
 
-# (الـ CSS الخاص بك يبقى كما هو...)
-st.markdown("""<style>[data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }</style>""", unsafe_allow_html=True)
-
-# إدارة الصفحات
+# إدارة الصفحات (الحالة)
 if 'page' not in st.session_state:
     st.session_state.page = 'translator'
 
-# --- صفحة الترجمة (كودك الأصلي) ---
-if st.session_state.page == 'translator':
-    st.title("سيد قط 😸")
-    
-    # [ضع هنا كود الترجمة الخاص بك كما هو...]
-    if st.button("🚀 الدخول لغرفة الدراسة الذكية"):
-        st.session_state.page = 'study_room'
-        st.rerun()
+# --- واجهة رفع الملف المشتركة ---
+st.title("سيد قط 😸")
+uploaded_file = st.file_uploader("ارفع ملف الملزمة (PDF) للبدء:", type="pdf")
 
-# --- صفحة غرفة الدراسة (الفكرة الجديدة) ---
-elif st.session_state.page == 'study_room':
-    st.title("👨‍🏫 غرفة دراسة سيد قط")
-    if st.button("⬅️ العودة للترجمة"):
-        st.session_state.page = 'translator'
-        st.rerun()
-    
-    user_q = st.text_input("اسأل المساعد الذكي عن فقرة في الملزمة:")
-    if user_q:
-        with st.spinner("سيد قط يشرح لك..."):
-            # شرح ذكي
-            response = model.generate_content(f"اشرح لي هذا بلهجة عراقية مبسطة: {user_q}")
+# شريط التنقل
+tab1, tab2 = st.tabs(["😸 صفحة الترجمة", "👨‍🏫 غرفة الدراسة الذكية"])
+
+# --- تبويب الترجمة ---
+with tab1:
+    if uploaded_file:
+        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        # [هنا تضع كود الترجمة الخاص بك الذي يعمل]
+        if st.button("ابدأ الترجمة"):
+            st.success("جاري الترجمة...")
+
+# --- تبويب غرفة الدراسة ---
+with tab2:
+    if uploaded_file:
+        st.write("اسأل سيد قط عن محتوى هذه الملزمة:")
+        user_q = st.text_input("ما الذي تريد شرحه؟")
+        if user_q:
+            # هنا المساعد يقرأ النص ويشرح
+            text_content = uploaded_file.getvalue() # يمكنك هنا استخراج النص من الملف
+            response = model.generate_content(f"اشرح لي هذا بلهجة عراقية: {user_q}")
             st.write(response.text)
-            
-            # تحويل الشرح لصوت
             if st.button("🔊 اسمع الشرح"):
                 tts = gTTS(text=response.text, lang='ar')
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
                 st.audio(fp, format='audio/mp3')
+    else:
+        st.info("يرجى رفع ملف في الأعلى أولاً!")
