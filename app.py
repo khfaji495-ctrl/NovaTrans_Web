@@ -8,11 +8,11 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 import base64
-from openai import OpenAI
+from groq import Groq
 from gtts import gTTS
 
-# إعداد المساعد الجديد (OpenAI)
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# إعداد المساعد الجديد (Groq)
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
@@ -114,9 +114,9 @@ with tab2:
         if user_q and user_q.strip() != "":
             with st.spinner("سيد قط يحلل المعلومات..."):
                 try:
-                    # طلب الشرح من OpenAI
+                    # طلب الشرح من Groq
                     response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
+                        model="llama3-8b-8192",
                         messages=[
                             {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم العلمية بلهجة عراقية بسيطة ومفهومة."},
                             {"role": "user", "content": f"بناءً على الملزمة، اشرح لي هذا بلهجة عراقية: {user_q}"}
