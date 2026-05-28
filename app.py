@@ -20,7 +20,7 @@ st.set_page_config(
 # تصميم CSS
 # ======================================================
 
-page_design = """
+page_design = """ 
 <style>
 
 #MainMenu {
