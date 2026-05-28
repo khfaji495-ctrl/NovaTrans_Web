@@ -1,9 +1,9 @@
 streamlit
 pymupdf
 deepl
+reportlab
 arabic-reshaper
 python-bidi
 google-generativeai
-langchain
-gTTS
-pydub
+gtts
+openai
