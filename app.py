@@ -44,7 +44,7 @@ if 'uploaded_pdf' not in st.session_state:
     st.session_state.uploaded_pdf = None
 
 # التبويبات الجديدة
-tab1, tab2 = st.tabs(["😸  الترجمة ", "👨‍🏫 غرفة الدراسة"]) 
+tab1, tab2 = st.tabs(["😸  ترجم مع السيد قط " , "👨‍🏫 غرفة الدراسه"]) 
 
 with tab1:
     # 3. إعداد مترجم DeepL
