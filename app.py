@@ -11,13 +11,21 @@ from reportlab.pdfbase.ttfonts import TTFont
 from bidi.algorithm import get_display
 import arabic_reshaper
 
-# إعدادات المساعد والترجمة
+# إعداد المساعد والترجمة
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash') # استخدمت فلاش لأنه أسرع وأذكى في قراءة الملفات
+model = genai.GenerativeModel('gemini-1.5-flash')
 translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 
 st.set_page_config(layout="wide", page_title="سيد قط الاحترافي")
 
+# دالة تجهيز الخط العربي
+def register_arabic_font():
+    try:
+        pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+    except:
+        st.error("⚠️ خطأ: تأكد من وجود ملف font.ttf في مجلد المشروع!")
+
+# دالة تجهيز النص العربي
 def prepare_arabic(text):
     return get_display(arabic_reshaper.reshape(text))
 
@@ -35,24 +43,18 @@ tab1, tab2 = st.tabs(["😸 صفحة الترجمة والحفظ", "👨‍🏫 
 with tab1:
     if uploaded_file:
         if st.button("بدء الترجمة وحفظ الملف"):
-            with st.spinner("سيد قط يعمل على الحفظ..."):
+            with st.spinner("سيد قط يكتب الخط العربي الجميل..."):
+                register_arabic_font() # تسجيل الخط قبل البدء
                 doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
                 pdf_buffer = io.BytesIO()
                 c = canvas.Canvas(pdf_buffer)
                 
-                # [هنا يوضع كود الرسم الذي اتفقنا عليه]
-                # بعد انتهاء الرسم:
+                # [هنا تضع منطقك القديم في الرسم باستخدام c.setFont("Arabic", 12)]
+                
                 c.save()
                 pdf_buffer.seek(0)
-                
-                # زر التحميل المباشر
-                st.download_button(
-                    label="📥 تحميل الملزمة المترجمة النهائية",
-                    data=pdf_buffer,
-                    file_name="Translated_SayedQatt.pdf",
-                    mime="application/pdf"
-                )
-                st.success("تم تجهيز الملف للتحميل! 😸")
+                st.download_button("📥 تحميل الملزمة المترجمة", pdf_buffer, "SayedQatt_Final.pdf")
+                st.success("تم الحفظ بنجاح! 😸")
 
 # --- تبويب غرفة الدراسة ---
 with tab2:
