@@ -11,7 +11,8 @@ import io
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط ", layout="wide")
 
-# كود CSS
+# كود 
+CSS
 page_design = """
 <style>
 
