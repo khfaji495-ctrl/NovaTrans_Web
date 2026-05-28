@@ -56,53 +56,44 @@ with tab1:
         c1, c2 = st.columns(2)
         with c1: start = st.number_input("من صفحة:", 1, total_pages, 1)
         with c2: end = st.number_input("إلى صفحة:", 1, total_pages, start)
-
-        if st.button("😸 ابدأ الترجمة مع سيد قط"):
+if st.button("😸 ابدأ الترجمة مع سيد قط"):
             with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
-                
-                # التأكد من وجود ملف الخط
+                # تسجيل الخط لكل صفحة بشكل منفصل لتجنب الخطأ
                 font_path = "font.ttf"
-                if not os.path.exists(font_path):
-                    st.error("⚠️ ملف الخط (font.ttf) غير موجود في المجلد!")
-                else:
-                    # تسجيل الخط
-                   # داخل حلقة for i in range(start - 1, end):
-                page = doc.load_page(i)
-
-# قم بتسجيل الخط هنا لكل صفحة بشكل صحيح
-                        page.insert_font(fontfile=font_path, fontname="ArabicFont")
-
-                            blocks = page.get_text("blocks")
-# ... باقي كود المعالجة كما هو
-
-                    for i in range(start - 1, end):
-                        page = doc.load_page(i)
-                        blocks = page.get_text("blocks")
-                        
-                        for b in blocks:
-                            text = b[4]
-                            x0, y0, x1, y1 = b[:4]
-                            
-                            # كشف بسيط للمعادلات (تخطي النصوص التي تحتوي رموزاً رياضية)
-                            is_equation = any(char in text for char in ['=', '+', '-', '/', '*', '^', '\\', '∫', '∑'])
-                            
-                            if text.strip() and not is_equation:
-                                try:
-                                    result = translator.translate_text(text, target_lang="AR")
-                                    proper_arabic = prepare_arabic_text(result.text)
-                                    # الرسم فوق الصفحة الأصلية (أضفنا 5 نقاط تحت النص الأصلي)
-                                    page.insert_text((x0, y1 + 5), proper_arabic, fontsize=10, fontname="ArabicFont", color=(0, 0, 0))
-                                except:
-                                    continue
-
-                    # حفظ الملف في الذاكرة
-                    output_buffer = io.BytesIO()
-                    doc.save(output_buffer)
-                    doc.close()
-                    output_buffer.seek(0)
+                
+                for i in range(start - 1, end):
+                    page = doc.load_page(i)
                     
-                    st.success("😼سيد قط أتم المهمة بنجاح!")
-                    st.download_button("😸 تحميل الملزمة من سيد قط", output_buffer, "SayedQatt_Translated.pdf", "application/pdf")
+                    # محاولة إضافة الخط للصفحة
+                    try:
+                        page.insert_font(fontfile=font_path, fontname="ArabicFont")
+                    except Exception as e:
+                        st.warning(f"⚠️ فشل إضافة الخط في صفحة {i+1}: {e}")
 
+                    blocks = page.get_text("blocks")
+                    for b in blocks:
+                        text = b[4]
+                        x0, y0, x1, y1 = b[:4]
+                        
+                        # تخطي المعادلات
+                        is_equation = any(char in text for char in ['=', '+', '-', '/', '*', '^', '\\', '∫', '∑'])
+                        
+                        if text.strip() and not is_equation:
+                            try:
+                                result = translator.translate_text(text, target_lang="AR")
+                                proper_arabic = prepare_arabic_text(result.text)
+                                # الرسم أسفل النص الإنجليزي بـ 5 نقاط
+                                page.insert_text((x0, y1 + 5), proper_arabic, fontsize=10, fontname="ArabicFont", color=(0, 0, 0))
+                            except:
+                                continue
+
+                # حفظ النتيجة
+                output_buffer = io.BytesIO()
+                doc.save(output_buffer)
+                doc.close()
+                output_buffer.seek(0)
+                
+                st.success("😼سيد قط أتم المهمة بنجاح!")
+                st.download_button("😸 تحميل الملزمة من سيد قط", output_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 with tab2:
     st.warning("⚠️ غرفة الدراسة الذكية تحت التطوير حالياً، انتظرنا قريباً! 😸")
