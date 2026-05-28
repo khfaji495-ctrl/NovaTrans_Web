@@ -101,18 +101,30 @@ if st.button("😺 ابدأ الترجمة مع سيد قط"):
                 filetype="pdf"
             )
 
-            # المرور على الصفحات
-            for i in range(start - 1, end):
-
-                page = doc.load_page(i)
-
-                text_dict = page.get_text("dict")
-# المرور على الصفحات
+           # المرور على الصفحات
 for i in range(start - 1, end):
 
     page = doc.load_page(i)
 
     text_dict = page.get_text("dict")
+
+    for block in text_dict["blocks"]:
+
+        if "lines" in block:
+
+            for line in block["lines"]:
+
+                line_text = ""
+
+                x0 = 0
+                y0 = 0
+
+                for span in line["spans"]:
+
+                    line_text += span["text"] + " "
+
+                    x0 = span["bbox"][0]
+                    y0 = span["bbox"][1]
 
     for block in text_dict["blocks"]:
 
