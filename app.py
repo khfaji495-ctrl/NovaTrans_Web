@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import fitz
 import deepl
@@ -86,7 +87,7 @@ try:
 except Exception:
 
     st.error(
-        "⚠️ خطأ: تأكد من إضافة مفتاح API باسم DEEPL_API_KEY داخل Secrets"
+        "⚠️ تأكد من إضافة DEEPL_API_KEY داخل Secrets"
     )
 
     st.stop()
@@ -100,6 +101,45 @@ def prepare_arabic_text(text):
     reshaped_text = arabic_reshaper.reshape(text)
 
     return get_display(reshaped_text)
+
+# -----------------------------------
+# التحقق من المعادلات
+# -----------------------------------
+
+def is_math_or_formula(text):
+
+    math_symbols = [
+        "=",
+        "+",
+        "-",
+        "÷",
+        "×",
+        "∫",
+        "√",
+        "∑",
+        "π",
+        "∞",
+        "≈",
+        "≠",
+        "<",
+        ">",
+        "^",
+        "{",
+        "}",
+        "[",
+        "]"
+    ]
+
+    # يحتوي أرقام ورموز كثيرة
+    symbol_count = sum(
+        symbol in text
+        for symbol in math_symbols
+    )
+
+    if symbol_count >= 1:
+        return True
+
+    return False
 
 # -----------------------------------
 # رفع الملف
@@ -120,10 +160,10 @@ if uploaded_file is not None:
 
     try:
 
-        # قراءة الملف مرة واحدة فقط
+        # قراءة الملف
         pdf_bytes = uploaded_file.getvalue()
 
-        # فتح الـ PDF
+        # فتح الملف
         doc = fitz.open(
             stream=pdf_bytes,
             filetype="pdf"
@@ -159,8 +199,16 @@ if uploaded_file is not None:
         if st.button("😸 ابدأ الترجمة مع سيد قط"):
 
             with st.spinner(
-                "🐈 سيد قط يترجم الملزمة الآن... يرجى الانتظار"
+                "🐈 سيد قط يترجم الملزمة الآن..."
             ):
+
+                # تحميل الخط العربي
+                page = doc[0]
+
+                page.insert_font(
+                    fontname="Arabic",
+                    fontfile="arial.ttf"
+                )
 
                 # المرور على الصفحات
                 for i in range(start - 1, end):
@@ -172,69 +220,78 @@ if uploaded_file is not None:
                     # المرور على البلوكات
                     for block in text_dict["blocks"]:
 
-                        if "lines" in block:
+                        if "lines" not in block:
+                            continue
 
-                            # المرور على الأسطر
-                            for line in block["lines"]:
+                        # المرور على الأسطر
+                        for line in block["lines"]:
 
-                                line_text = ""
+                            line_text = ""
 
-                                x0 = 0
-                                y0 = 0
+                            x0 = 0
+                            y0 = 0
 
-                                # جمع النص
-                                for span in line["spans"]:
+                            # جمع النص
+                            for span in line["spans"]:
 
-                                    line_text += span["text"] + " "
+                                line_text += span["text"] + " "
 
-                                    x0 = span["bbox"][0]
+                                x0 = span["bbox"][0]
+                                y0 = span["bbox"][1]
 
-                                    y0 = span["bbox"][1]
+                            line_text = line_text.strip()
 
-                                line_text = line_text.strip()
+                            # تجاهل النصوص الفارغة
+                            if not line_text:
+                                continue
 
-                                # إذا النص مو فارغ
-                                if line_text:
+                            # تجاهل المعادلات
+                            if is_math_or_formula(line_text):
+                                continue
 
-                                    try:
+                            # تجاهل النصوص القصيرة
+                            if len(line_text) < 4:
+                                continue
 
-                                        # ترجمة النص
-                                        result = translator.translate_text(
-                                            line_text,
-                                            target_lang="AR"
-                                        )
+                            try:
 
-                                        arabic_text = prepare_arabic_text(
-                                            result.text
-                                        )
+                                # الترجمة
+                                result = translator.translate_text(
+                                    line_text,
+                                    target_lang="AR"
+                                )
 
-                                        # موضع النص العربي
-                                        arabic_y = y0 - 10
+                                arabic_text = prepare_arabic_text(
+                                    result.text
+                                )
 
-                                        # مستطيل أبيض خلف الترجمة
-                                        page.draw_rect(
-                                            fitz.Rect(
-                                                x0 - 2,
-                                                arabic_y - 2,
-                                                x0 + 320,
-                                                arabic_y + 12
-                                            ),
-                                            fill=(1, 1, 1),
-                                            overlay=True
-                                        )
+                                # موضع النص العربي
+                                arabic_y = y0 - 10
 
-                                        # كتابة الترجمة
-                                        page.insert_text(
-                                            (x0, arabic_y + 8),
-                                            arabic_text,
-                                            fontsize=8,
-                                            fontname="helv",
-                                            color=(1, 0, 0),
-                                            overlay=True
-                                        )
+                                # خلفية بيضاء
+                                page.draw_rect(
+                                    fitz.Rect(
+                                        x0 - 2,
+                                        arabic_y - 2,
+                                        x0 + 350,
+                                        arabic_y + 12
+                                    ),
+                                    fill=(1, 1, 1),
+                                    overlay=True
+                                )
 
-                                    except:
-                                        continue
+                                # كتابة الترجمة
+                                page.insert_text(
+                                    (x0, arabic_y + 8),
+                                    arabic_text,
+                                    fontsize=8,
+                                    fontname="Arabic",
+                                    color=(1, 0, 0),
+                                    overlay=True
+                                )
+
+                            except:
+                                continue
 
                 # -----------------------------------
                 # حفظ الملف
@@ -257,7 +314,7 @@ if uploaded_file is not None:
                 # -----------------------------------
 
                 st.success(
-                    "😼 سيد قط أتم المهمة بنجاح!"
+                    "😼 تمت الترجمة بنجاح!"
                 )
 
                 st.download_button(
@@ -272,3 +329,4 @@ if uploaded_file is not None:
         st.error("حدث خطأ أثناء معالجة الملف")
 
         st.write(e)
+```
