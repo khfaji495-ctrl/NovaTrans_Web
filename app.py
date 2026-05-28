@@ -21,7 +21,6 @@ st.set_page_config(
 page_design = """
 <style>
 
-/* إخفاء قائمة Streamlit */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -102,7 +101,7 @@ def prepare_arabic_text(text):
     return get_display(reshaped_text)
 
 # -----------------------------------
-# كشف المعادلات الرياضية
+# كشف المعادلات
 # -----------------------------------
 
 def is_math_or_formula(text):
@@ -136,15 +135,12 @@ def is_math_or_formula(text):
         for c in text
     )
 
-    # معادلات فعلية
     if symbol_count >= 2 and letters_count < 5:
         return True
 
-    # إذا الأرقام أكثر من الأحرف
     if digits_count > letters_count and symbol_count > 0:
         return True
 
-    # معادلات قصيرة
     if len(text) < 15 and symbol_count > 0:
         return True
 
@@ -169,10 +165,8 @@ if uploaded_file is not None:
 
     try:
 
-        # قراءة الملف
         pdf_bytes = uploaded_file.getvalue()
 
-        # فتح الملف
         doc = fitz.open(
             stream=pdf_bytes,
             filetype="pdf"
@@ -180,7 +174,6 @@ if uploaded_file is not None:
 
         total_pages = len(doc)
 
-        # اختيار الصفحات
         c1, c2 = st.columns(2)
 
         with c1:
@@ -229,32 +222,31 @@ if uploaded_file is not None:
 
                     text_dict = page.get_text("dict")
 
-                    # المرور على البلوكات
                     for block in text_dict["blocks"]:
 
                         if "lines" not in block:
                             continue
 
-                        # المرور على الأسطر
                         for line in block["lines"]:
 
                             line_text = ""
 
                             x0 = 0
                             y0 = 0
+                            x1 = 0
+                            y1 = 0
 
-                            # جمع النص
                             for span in line["spans"]:
 
                                 line_text += span["text"] + " "
 
                                 x0 = span["bbox"][0]
-
                                 y0 = span["bbox"][1]
+                                x1 = span["bbox"][2]
+                                y1 = span["bbox"][3]
 
                             line_text = line_text.strip()
 
-                            # تجاهل النصوص الفارغة
                             if not line_text:
                                 continue
 
@@ -269,7 +261,7 @@ if uploaded_file is not None:
                             try:
 
                                 # -----------------------------------
-                                # الترجمة
+                                # ترجمة النص
                                 # -----------------------------------
 
                                 result = translator.translate_text(
@@ -282,32 +274,42 @@ if uploaded_file is not None:
                                 )
 
                                 # -----------------------------------
-                                # مكان الترجمة
+                                # حذف النص الأصلي
                                 # -----------------------------------
 
-                                arabic_y = y0 - 16
+                                rect = fitz.Rect(
+                                    x0,
+                                    y0,
+                                    x1,
+                                    y1
+                                )
+
+                                page.add_redact_annot(
+                                    rect,
+                                    fill=(1, 1, 1)
+                                )
+
+                                page.apply_redactions()
 
                                 # -----------------------------------
-                                # خلفية بيضاء
+                                # إعادة كتابة الإنكليزي
                                 # -----------------------------------
 
-                                page.draw_rect(
-                                    fitz.Rect(
-                                        x0 - 3,
-                                        arabic_y - 3,
-                                        x0 + 450,
-                                        arabic_y + 18
-                                    ),
-                                    fill=(1, 1, 1),
+                                page.insert_text(
+                                    (x0, y0 + 10),
+                                    line_text,
+                                    fontsize=9,
+                                    fontname="helv",
+                                    color=(0, 0, 0),
                                     overlay=True
                                 )
 
                                 # -----------------------------------
-                                # كتابة الترجمة
+                                # كتابة الترجمة العربية فوقه
                                 # -----------------------------------
 
                                 page.insert_text(
-                                    (x0, arabic_y + 10),
+                                    (x0, y0 - 2),
                                     arabic_text,
                                     fontsize=11,
                                     fontname="Arabic",
