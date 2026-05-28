@@ -3,7 +3,6 @@ import fitz
 import deepl
 import io
 import re
-from PIL import Image
 import arabic_reshaper
 from bidi.algorithm import get_display
 
@@ -11,20 +10,13 @@ st.set_page_config(page_title="سيد قط", layout="wide")
 
 translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 
-# ---------------- Arabic Fix ----------------
+# ---------------- Arabic fix ----------------
 def fix_arabic(text):
     return get_display(arabic_reshaper.reshape(text))
 
-# ---------------- Equation Filter ----------------
+# ---------------- filter equations ----------------
 def is_equation(text):
     return bool(re.search(r"[=<>±√∑∫]|\\d+\\/\\d+", text))
-
-# ---------------- PDF → Image ----------------
-def page_to_image(page, zoom=2):
-    mat = fitz.Matrix(zoom, zoom)
-    pix = page.get_pixmap(matrix=mat)
-    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    return img, pix.width, pix.height
 
 # ---------------- UI ----------------
 uploaded_file = st.file_uploader("ارفع PDF", type="pdf")
@@ -35,23 +27,17 @@ if uploaded_file:
     start = st.number_input("من صفحة", 1, len(doc), 1)
     end = st.number_input("إلى صفحة", 1, len(doc), len(doc))
 
-    if st.button("ابدأ التحويل 😼"):
+    if st.button("ابدأ 😼"):
         output = io.BytesIO()
         new_doc = fitz.open()
 
         for i in range(start - 1, end):
             page = doc.load_page(i)
 
-            # 🔥 تحويل الصفحة لصورة (يحافظ على الشكل 100%)
-            img, w, h = page_to_image(page, zoom=2)
-
-            new_page = new_doc.new_page(width=w, height=h)
-
-            # وضع الصورة كخلفية
-            new_page.insert_image(new_page.rect, pixmap=page.get_pixmap(matrix=fitz.Matrix(2,2)))
+            new_page = new_doc.new_page(width=page.rect.width, height=page.rect.height)
+            new_page.show_pdf_page(page.rect, doc, i)
 
             blocks = page.get_text("blocks")
-            y_offset = 0
 
             for b in blocks:
                 x0, y0, x1, y1, text = b[:5]
@@ -66,17 +52,24 @@ if uploaded_file:
                 except:
                     continue
 
-                # ---------------- English ----------------
-                new_page.insert_text(
-                    (x0, y0),
+                rect = fitz.Rect(x0, y0, x1, y1)
+
+                # ---------------- 1) غطاء أبيض فوق النص الأصلي ----------------
+                new_page.draw_rect(rect, color=None, fill=(1, 1, 1))
+
+                # ---------------- 2) إعادة كتابة الإنجليزي ----------------
+                new_page.insert_textbox(
+                    rect,
                     text,
                     fontsize=10,
                     color=(0, 0, 0)
                 )
 
-                # ---------------- Arabic فوقه ----------------
-                new_page.insert_text(
-                    (x0, y0 - 12),
+                # ---------------- 3) الترجمة فوقه ----------------
+                ar_rect = fitz.Rect(x0, y0 - 12, x1, y0)
+
+                new_page.insert_textbox(
+                    ar_rect,
                     ar,
                     fontsize=11,
                     color=(0.1, 0.6, 0.2)
@@ -85,11 +78,11 @@ if uploaded_file:
         new_doc.save(output)
         output.seek(0)
 
-        st.success("تم إنشاء النسخة الاحترافية 😼🔥")
+        st.success("تم إنشاء النسخة النهائية 😼🔥")
 
         st.download_button(
-            "تحميل الملف النهائي",
+            "تحميل الملف",
             output,
-            file_name="SayedQatt_Pro.pdf",
+            file_name="final_translated.pdf",
             mime="application/pdf"
         )
