@@ -70,9 +70,15 @@ def prepare_arabic_text(text):
 # 4. واجهة رفع الملفات
 st.divider()
 uploaded_file = st.file_uploader(" 😸 ارسل ملف الملزمه للسيد قط", type="pdf")
-
 if uploaded_file is not None:
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+
+    pdf_bytes = uploaded_file.getvalue()
+
+    doc = fitz.open(
+        stream=pdf_bytes,
+        filetype="pdf"
+    )
+
     total_pages = len(doc)
     
     c1, c2 = st.columns(2)
