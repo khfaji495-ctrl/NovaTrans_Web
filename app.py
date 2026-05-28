@@ -116,12 +116,13 @@ with tab2:
                 try:
                     # طلب الشرح من Groq
                     response = client.chat.completions.create(
-                        model="llama3-8b-8192",
-                        messages=[
-                            {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم العلمية بلهجة عراقية بسيطة ومفهومة."},
-                            {"role": "user", "content": f"بناءً على الملزمة، اشرح لي هذا بلهجة عراقية: {user_q}"}
-                        ]
-                    )
+                      response = client.chat.completions.create(
+    model="llama-3.1-8b-instant",  # <--- هذا هو الموديل الجديد والمستقر
+    messages=[
+        {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم العلمية بلهجة عراقية بسيطة ومفهومة."},
+        {"role": "user", "content": f"بناءً على الملزمة، اشرح لي هذا بلهجة عراقية: {user_q}"}
+    ]
+)
                     
                     response_text = response.choices[0].message.content
                     st.write(response_text)
