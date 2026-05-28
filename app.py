@@ -106,29 +106,30 @@ with tab1:
                 st.success("😼سيد قط أتم المهمة بنجاح!")
                 st.download_button("😸 تحميل الملزمة من سيد قط", pdf_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 
-from groq import Groq
+from openai import OpenAI
 
-# إعداد المساعد باستخدام Groq (بديل سريع لـ Google)
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# إعداد المساعد (تأكد أن المفتاح في الـ Secrets باسم OPENAI_API_KEY)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 with tab2:
     if st.session_state.uploaded_pdf:
         st.write("---")
         user_q = st.text_input("اسأل سيد قط عن الملزمة:")
         
+        # شرط لمنع إرسال طلبات فارغة
         if user_q and user_q.strip() != "":
             with st.spinner("سيد قط يحلل المعلومات..."):
                 try:
-                    # طلب الشرح من Llama 3 عبر Groq
-                    chat_completion = client.chat.completions.create(
+                    # طلب الشرح من OpenAI
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo", # أو يمكنك استخدام "gpt-4o"
                         messages=[
-                            {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم بلهجة عراقية بسيطة."},
-                            {"role": "user", "content": f"اشرح لي هذا بلهجة عراقية: {user_q}"}
-                        ],
-                        model="llama3-8b-8192",
+                            {"role": "system", "content": "أنت مساعد ذكي اسمه سيد قط، تشرح الملازم العلمية بلهجة عراقية بسيطة ومفهومة."},
+                            {"role": "user", "content": f"بناءً على الملزمة، اشرح لي هذا بلهجة عراقية: {user_q}"}
+                        ]
                     )
                     
-                    response_text = chat_completion.choices[0].message.content
+                    response_text = response.choices[0].message.content
                     st.write(response_text)
                     
                     if st.button("🔊 اسمع الشرح"):
@@ -137,7 +138,7 @@ with tab2:
                         tts.write_to_fp(fp)
                         st.audio(fp, format='audio/mp3')
                 except Exception as e:
-                    st.error(f"خطأ في الاتصال: {e}")
+                    st.error(f"حدث خطأ في الاتصال: {e}")
         else:
             st.write("بانتظار سؤالك يا بطل! 😸")
     else:
