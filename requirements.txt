@@ -6,3 +6,5 @@ arabic-reshaper
 python-bidi
 gtts
 groq
+opencv-python
+pdfplumber
