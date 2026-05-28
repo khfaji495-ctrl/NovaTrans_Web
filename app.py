@@ -1,89 +1,122 @@
 import streamlit as st
 import fitz
 import deepl
-import io
-import base64
-import google.generativeai as genai
-from gtts import gTTS
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from bidi.algorithm import get_display
 import arabic_reshaper
+import io
+import base64
+import google.generativeai as genai
+from gtts import gTTS
 
-# 1. إعدادات الـ API
+# إعداد المساعد الذكي
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 model = genai.GenerativeModel('gemini-1.5-flash')
-translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 
-st.set_page_config(layout="wide", page_title="سيد قط الاحترافي")
+# 1. إعدادات الصفحة
+st.set_page_config(page_title="سيد قط ", layout="wide")
 
-# 2. إدارة الذاكرة (لضمان بقاء الملف)
+# كود CSS: إخفاء القائمة + الخلفية + التنسيق
+page_design = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+[data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #0e1117 0%, #16213e 100%); }
+[data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
+.main-title { color: #10b981; text-align: center; font-size: 3.5rem; font-weight: bold; margin-top: -50px; }
+.sub-title { color: #cbd5e1; text-align: center; font-size: 1.2rem; margin-bottom: 30px; }
+</style>
+"""
+st.markdown(page_design, unsafe_allow_html=True)
+
+# 2. عرض الـ GIF والعنوان
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    st.image("cat_pixel.gif", use_container_width=True)
+
+st.markdown('<p class="main-title">سيد قط </p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
+
+# إدارة ذاكرة الملف
 if 'uploaded_pdf' not in st.session_state:
     st.session_state.uploaded_pdf = None
 
-def register_arabic_font():
-    try:
-        pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
-    except:
-        st.error("⚠️ خطأ: تأكد من وجود ملف font.ttf في مجلد المشروع!")
+# التبويبات الجديدة
+tab1, tab2 = st.tabs(["😸 الترجمة", "👨‍🏫 غرفة الدراسة"])
 
-st.title("سيد قط 😸")
-uploaded_file = st.file_uploader("ارفع الملزمة (PDF) للبدء:", type="pdf")
-
-if uploaded_file:
-    st.session_state.uploaded_pdf = uploaded_file
-
-# 3. التبويبات الرئيسية
-tab1, tab2 = st.tabs(["😸 صفحة الترجمة والحفظ", "👨‍🏫 غرفة الدراسة الذكية"])
-
-# --- تبويب الترجمة والحفظ ---
 with tab1:
-    if st.session_state.uploaded_pdf:
-        if st.button("بدء الترجمة وحفظ الملف"):
-            with st.spinner("سيد قط يترجم ويكتب الخط العربي..."):
-                register_arabic_font()
-                doc = fitz.open(stream=st.session_state.uploaded_pdf.read(), filetype="pdf")
+    # 3. إعداد مترجم DeepL
+    try:
+        auth_key = st.secrets["DEEPL_API_KEY"]
+        translator = deepl.Translator(auth_key)
+    except Exception as e:
+        st.error("⚠️ خطأ: تأكد من إضافة مفتاح API في إعدادات Secrets باسم DEEPL_API_KEY")
+        st.stop()
+
+    def prepare_arabic_text(text):
+        reshaped_text = arabic_reshaper.reshape(text)
+        return get_display(reshaped_text)
+
+    # 4. واجهة رفع الملفات
+    st.divider()
+    uploaded_file = st.file_uploader(" 😸 ارسل ملف الملزمه للسيد قط", type="pdf")
+
+    if uploaded_file is not None:
+        st.session_state.uploaded_pdf = uploaded_file
+        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        total_pages = len(doc)
+        
+        c1, c2 = st.columns(2)
+        with c1: start = st.number_input("من صفحة:", 1, total_pages, 1)
+        with c2: end = st.number_input("إلى صفحة:", 1, total_pages, start)
+
+        if st.button("😸 ابدأ الترجمة مع سيد قط"):
+            with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
                 pdf_buffer = io.BytesIO()
                 c = canvas.Canvas(pdf_buffer)
+                try:
+                    pdfmetrics.registerFont(TTFont('Arabic', 'font.ttf'))
+                except:
+                    st.warning("⚠️ تنبيه: ملف الخط (font.ttf) غير موجود.")
                 
-                # منطق الترجمة والرسم (تأكد من تعديل الإحداثيات حسب حاجتك)
-                # ... (هنا ضع كود الرسم الخاص بك بـ reportlab) ...
-                
+                y = 800 
+                for i in range(start - 1, end):
+                    text = doc.load_page(i).get_text()
+                    lines = text.split('\n')
+                    for line in lines:
+                        if line.strip():
+                            if y < 100:
+                                c.showPage()
+                                y = 800
+                            c.setFont("Helvetica", 12)
+                            c.drawString(50, y, line[:80])
+                            y -= 20
+                            try:
+                                result = translator.translate_text(line, target_lang="AR")
+                                proper_arabic = prepare_arabic_text(result.text)
+                                c.setFont("Arabic", 12)
+                                c.drawString(50, y, proper_arabic)
+                                y -= 40
+                            except: continue
                 c.save()
                 pdf_buffer.seek(0)
-                
-                st.download_button(
-                    label="📥 تحميل الملزمة المترجمة",
-                    data=pdf_buffer,
-                    file_name="Translated_SayedQatt.pdf",
-                    mime="application/pdf"
-                )
-                st.success("تم الحفظ بنجاح! 😸")
-    else:
-        st.info("يرجى رفع ملف في الأعلى للبدء.")
+                st.success("😼سيد قط أتم المهمة بنجاح!")
+                st.download_button("😸 تحميل الملزمة من سيد قط", pdf_buffer, "SayedQatt_Translated.pdf", "application/pdf")
 
-# --- تبويب غرفة الدراسة ---
 with tab2:
     if st.session_state.uploaded_pdf:
-        col_pdf, col_chat = st.columns([1, 1])
-        with col_pdf:
-            st.subheader("الملزمة")
-            pdf_data = st.session_state.uploaded_pdf.getvalue()
-            base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
-            st.markdown(f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
-        
-        with col_chat:
-            st.subheader("سيد قط يشرح لك:")
-            user_q = st.text_input("اسألني عن أي جزء:")
-            if user_q:
-                with st.spinner("سيد قط يفكر..."):
-                    response = model.generate_content(f"اشرح لي هذا بلهجة عراقية: {user_q}")
-                    st.write(response.text)
-                    if st.button("🔊 اسمع الشرح صوتياً"):
-                        tts = gTTS(text=response.text, lang='ar')
-                        fp = io.BytesIO()
-                        tts.write_to_fp(fp)
-                        st.audio(fp, format='audio/mp3')
+        st.write("---")
+        user_q = st.text_input("اسأل سيد قط عن الملزمة:")
+        if user_q:
+            response = model.generate_content(f"اشرح لي بلهجة عراقية: {user_q}")
+            st.write(response.text)
+            if st.button("🔊 اسمع الشرح"):
+                tts = gTTS(text=response.text, lang='ar')
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                st.audio(fp, format='audio/mp3')
     else:
         st.info("يرجى رفع الملف في تبويب الترجمة أولاً.")
