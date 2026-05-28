@@ -14,7 +14,7 @@ translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 def fix_arabic(text):
     return get_display(arabic_reshaper.reshape(text))
 
-# ---------------- filter equations ----------------
+# ---------------- detect equations ----------------
 def is_equation(text):
     return bool(re.search(r"[=<>±√∑∫]|\\d+\\/\\d+", text))
 
@@ -54,10 +54,29 @@ if uploaded_file:
 
                 rect = fitz.Rect(x0, y0, x1, y1)
 
-                # ---------------- 1) غطاء أبيض فوق النص الأصلي ----------------
-                new_page.draw_rect(rect, color=None, fill=(1, 1, 1))
+                # ---------------- 1) غطاء أبيض صحيح (Redaction) ----------------
+                new_page.add_redact_annot(rect, fill=(1, 1, 1))
 
-                # ---------------- 2) إعادة كتابة الإنجليزي ----------------
+            # لازم تطبيق الحذف قبل الكتابة
+            new_page.apply_redactions()
+
+            # ---------------- 2) إعادة كتابة + ترجمة ----------------
+            for b in blocks:
+                x0, y0, x1, y1, text = b[:5]
+                text = text.strip()
+
+                if not text or is_equation(text):
+                    continue
+
+                try:
+                    ar = translator.translate_text(text, target_lang="AR").text
+                    ar = fix_arabic(ar)
+                except:
+                    continue
+
+                rect = fitz.Rect(x0, y0, x1, y1)
+
+                # English (إعادة كتابة)
                 new_page.insert_textbox(
                     rect,
                     text,
@@ -65,7 +84,7 @@ if uploaded_file:
                     color=(0, 0, 0)
                 )
 
-                # ---------------- 3) الترجمة فوقه ----------------
+                # Arabic فوقه
                 ar_rect = fitz.Rect(x0, y0 - 12, x1, y0)
 
                 new_page.insert_textbox(
@@ -78,11 +97,11 @@ if uploaded_file:
         new_doc.save(output)
         output.seek(0)
 
-        st.success("تم إنشاء النسخة النهائية 😼🔥")
+        st.success("اشتغل بنجاح 😼🔥")
 
         st.download_button(
             "تحميل الملف",
             output,
-            file_name="final_translated.pdf",
+            file_name="translated_fixed.pdf",
             mime="application/pdf"
         )
