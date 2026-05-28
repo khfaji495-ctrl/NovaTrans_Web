@@ -71,7 +71,33 @@ if uploaded_file is not None:
             page = doc.load_page(i)
             c.setPageSize((page.rect.width, page.rect.height))
             
-            # 1. رسم الخلفية (الصورة الأصلية للصفحة)
+            # --- رسم الخلفية (الصورة الأصلية) ---
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
             img_data = pix.tobytes("png")
-            img_
+            img_reader = ImageReader(io.BytesIO(img_data))
+            c.drawImage(img_reader, 0, 0, width=page.rect.width, height=page.rect.height)
+
+            # --- إضافة النصوص ---
+            blocks = sorted(page.get_text("blocks"), key=lambda b: b[1])
+            for block in blocks:
+                x0, y0, x1, y1, text, block_no, block_type = block
+                if block_type == 0: 
+                    # النص الأصلي
+                    c.setFont("Helvetica", 10)
+                    c.drawString(x0, page.rect.height - y0 - 10, text.replace('\n', ' '))
+                    
+                    # الترجمة
+                    try:
+                        translated = translator.translate_text(text, target_lang="AR")
+                        c.setFont("Arabic", 10)
+                        c.drawString(x0, page.rect.height - y1 - 15, prepare_arabic_text(translated.text))
+                    except:
+                        continue
+            
+            c.showPage()
+            progress_bar.progress((idx + 1) / total_pages)
+            
+        c.save()
+        pdf_buffer.seek(0)
+        st.success("😼سيد قط أتم المهمة بنجاح!")
+        st.download_button("😸 تحميل الملزمة", data=pdf_buffer, file_name="SayedQatt_Translated.pdf", mime="application/pdf")
