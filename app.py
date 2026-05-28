@@ -88,11 +88,12 @@ if st.button("😸 ابدأ الترجمة مع سيد قط"):
 
         try:
 
-            # فتح ملف الـ PDF
-            doc = fitz.open(
-                stream=uploaded_file.read(),
-                filetype="pdf"
-            )
+       pdf_bytes = uploaded_file.getvalue()
+
+doc = fitz.open(
+    stream=pdf_bytes,
+    filetype="pdf"
+)
 
             # المرور على الصفحات
             for i in range(start - 1, end):
