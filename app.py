@@ -108,24 +108,55 @@ if st.button("😺 ابدأ الترجمة مع سيد قط"):
 
                 text_dict = page.get_text("dict")
 
-                for block in text_dict["blocks"]:
+             for block in text_dict["blocks"]:
 
-                    if "lines" in block:
+    if "lines" in block:
 
-                        for line in block["lines"]:
+        for line in block["lines"]:
 
-                            line_text = ""
+            line_text = ""
 
-                            x0 = 0
-                            y0 = 0
+            x0 = 0
+            y0 = 0
 
-                            for span in line["spans"]:
-                                line_text += span["text"] + " "
+            for span in line["spans"]:
 
-                                x0 = span["bbox"][0]
-                                y0 = span["bbox"][1]
+                line_text += span["text"] + " "
 
-                            if line_text.strip():
+                x0 = span["bbox"][0]
+                y0 = span["bbox"][1] - 10
+
+            if line_text.strip():
+
+                try:
+
+                    result = translator.translate_text(
+                        line_text,
+                        target_lang="AR"
+                    )
+
+                    arabic_text = prepare_arabic_text(result.text)
+
+                    page.draw_rect(
+                        fitz.Rect(
+                            x0 - 2,
+                            y0 - 14,
+                            x0 + 300,
+                            y0 + 2
+                        ),
+                        color=(1, 1, 1),
+                        fill=(1, 1, 1)
+                    )
+
+                    page.insert_text(
+                        (x0, y0 - 3),
+                        arabic_text,
+                        fontsize=9,
+                        color=(1, 0, 0)
+                    )
+
+                except:
+                    pass
 
                                 result = translator.translate_text(
                                     line_text,
