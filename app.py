@@ -62,7 +62,7 @@ with tab1:
             with st.spinner(".... 🐈سيد قط يترجم الملزمة الآن.. يرجى الانتظار"):
                 # التسجيل للخط
                 try:
-                    doc.insert_font(fontfile="font.ttf", fontname="ArabicFont")
+                    doc.insert_font("font.ttf", fontname="ArabicFont")
                 except:
                     st.warning("⚠️ ملف الخط (font.ttf) مفقود، قد لا تظهر العربية بشكل صحيح.")
 
