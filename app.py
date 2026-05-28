@@ -206,7 +206,7 @@ if uploaded_file is not None:
 
                 page.insert_font(
                     fontname="Arabic",
-                    fontfile="arial.ttf"
+                    fontfile="font.ttf"
                 )
 
                 # المرور على الصفحات
