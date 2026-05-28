@@ -78,15 +78,23 @@ if st.button("😸 ابدأ الترجمة مع سيد قط"):
                         # تخطي المعادلات
                         is_equation = any(char in text for char in ['=', '+', '-', '/', '*', '^', '\\', '∫', '∑'])
                         
-                        if text.strip() and not is_equation:
+                       if text.strip() and not is_equation:
                             try:
                                 result = translator.translate_text(text, target_lang="AR")
                                 proper_arabic = prepare_arabic_text(result.text)
-                                # الرسم أسفل النص الإنجليزي بـ 5 نقاط
-                                page.insert_text((x0, y1 + 5), proper_arabic, fontsize=10, fontname="ArabicFont", color=(0, 0, 0))
+                                
+                                # التعديل هنا: 
+                                # بدل y1+5 التي تسبب تداخل، نستخدم y1 + 15 
+                                # أو نتحكم بحجم الخط ليكون أصغر قليلاً
+                                page.insert_text(
+                                    (x0, y1 + 15), 
+                                    proper_arabic, 
+                                    fontsize=9,            # تصغير الخط قليلاً ليناسب المساحة
+                                    fontname="ArabicFont", 
+                                    color=(0, 0, 0.5)      # لون أزرق غامق للترجمة لتمييزها عن الإنجليزي
+                                )
                             except:
                                 continue
-
                 # حفظ النتيجة
                 output_buffer = io.BytesIO()
                 doc.save(output_buffer)
