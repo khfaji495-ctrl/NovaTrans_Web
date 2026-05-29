@@ -5,6 +5,15 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 import os
+import streamlit.components.v1 as components
+
+# --- إضافة كود Google AdSense ---
+adsense_code = """
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676304062422955"
+     crossorigin="anonymous"></script>
+"""
+components.html(adsense_code, height=0, width=0)
+# --------------------------------
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط", layout="wide")
@@ -23,7 +32,7 @@ st.markdown(page_design, unsafe_allow_html=True)
 # العنوان و الـ GIF الأساسي
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    st.image("cat_pixel.gif") # استدعاء مباشر
+    st.image("cat_pixel.gif") 
 
 st.markdown('<p class="main-title">سيد قط </p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">سيد قط يترجم ملازمك الهندسية والطبية بدقة</p>', unsafe_allow_html=True)
@@ -39,12 +48,12 @@ def prepare_arabic_text(text):
     return get_display(arabic_reshaper.reshape(text))
 
 # 4. التبويبات
-tab1, tab2 = st.tabs(["   ترجمة السيد قط   ", "👨‍🏫 غرفة الدراسة"])
+tab1, tab2 = st.tabs(["    ترجمة السيد قط    ", "👨‍🏫 غرفة الدراسة"])
 
 with tab1:
     c1, c2 = st.columns([0.1, 1])
     with c1:
-        st.image("cati-pixel.gif") # استدعاء مباشر بدون تحديد width لتجنب الخطأ
+        st.image("cati-pixel.gif") 
     with c2:
         st.subheader("ترجمة السيد قط")
         
@@ -61,7 +70,7 @@ with tab1:
             with placeholder.container():
                 col_anim1, col_anim2 = st.columns([1, 4])
                 with col_anim1:
-                    st.image("cati-pixel.gif") # استدعاء مباشر
+                    st.image("cati-pixel.gif") 
                 with col_anim2:
                     st.markdown("<br><h3> يرجى الانتظار...</h3>", unsafe_allow_html=True)
 
