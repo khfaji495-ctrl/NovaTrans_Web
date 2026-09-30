@@ -22,11 +22,10 @@ with col2:
 
 st.markdown("""
 سيد قط""", unsafe_allow_html=True)
-st.markdown('
+st.markdown("""
 سيد قط يترجم ملازمك الهندسية والطبية بدقة
-', unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-إعداد المترجم
 try:
 translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 except:
@@ -36,7 +35,7 @@ st.stop()
 def prepare_arabic_text(text):
 return get_display(arabic_reshaper.reshape(text))
 
-التبويبات
+
 tab1, tab2 = st.tabs(["😸 ترجمة السيد قط", "👨‍🏫 غرفة الدراسة"])
 
 with tab1:
