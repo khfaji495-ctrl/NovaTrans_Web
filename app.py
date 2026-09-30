@@ -21,13 +21,9 @@ with col2:
         st.image("cat_pixel.gif")
 
 st.markdown('
-سيد قط
-
-', unsafe_allow_html=True)
+سيد قط', unsafe_allow_html=True)
 st.markdown('
-
 سيد قط يترجم ملازمك الهندسية والطبية بدقة
-
 ', unsafe_allow_html=True)
 
 إعداد المترجم
