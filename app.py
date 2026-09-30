@@ -62,10 +62,9 @@ if uploaded_file is not None:
                 if os.path.exists("cati-pixel.gif"):
                     st.image("cati-pixel.gif")
             with col_anim2:
-                st.markdown("
-
+                st.markdown("""
 سيد قط يترجم، يرجى الانتظار...
-", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
         new_doc = fitz.open()
         for i in range(start - 1, end):
