@@ -22,11 +22,7 @@ with col2:
 
 st.markdown('سيد قط', unsafe_allow_html=True)
 st.markdown('
-
-سيد قط يترجم ملازمك الهندسية والطبية بدقة
-
-', unsafe_allow_html=True)
-
+سيد قط يترجم ملازمك الهندسية والطبية بدقة', unsafe_allow_html=True)
 إعداد المترجم
 try:
 translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
