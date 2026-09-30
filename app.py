@@ -5,9 +5,8 @@ from bidi.algorithm import get_display
 import arabic_reshaper
 import io
 import os
-1. إعدادات الصفحة
+#1. إعدادات الصفحة
 st.set_page_config(page_title="سيد قط", layout="wide")
-كود CSS للتصميم
 page_design = """
 """ st.markdown(page_design, unsafe_allow_html=True)
 العنوان و الـ GIF الأساسي
