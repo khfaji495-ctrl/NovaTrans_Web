@@ -20,8 +20,8 @@ with col2:
     if os.path.exists("cat_pixel.gif"):
         st.image("cat_pixel.gif")
 
-st.markdown('
-سيد قط', unsafe_allow_html=True)
+st.markdown("""
+سيد قط""", unsafe_allow_html=True)
 st.markdown('
 سيد قط يترجم ملازمك الهندسية والطبية بدقة
 ', unsafe_allow_html=True)
