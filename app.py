@@ -27,7 +27,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
+    translator = deepl.Translator(st.secrets["DEEPL_API_KEY"])
 except:
 st.error("⚠️ تأكد من إعداد مفتاح API في Secrets باسم DEEPL_API_KEY")
 st.stop()
