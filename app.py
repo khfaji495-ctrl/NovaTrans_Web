@@ -20,9 +20,7 @@ col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("cat_pixel.gif")
 
-st.markdown('سيد قط
-
-', unsafe_allow_html=True)
+st.markdown('سيد قط', unsafe_allow_html=True)
 st.markdown('
 
 سيد قط يترجم ملازمك الهندسية والطبية بدقة
